@@ -7,7 +7,7 @@ GOFMT := $(dir $(GO))gofmt
 BIN_DIR := $(CURDIR)/bin
 GO_ENV := GOCACHE=$(CURDIR)/.cache/go-build GOMODCACHE=$(CURDIR)/.cache/go-mod GOTELEMETRY=off GOTOOLCHAIN=local
 
-.PHONY: help bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm clean
+.PHONY: help bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -21,6 +21,7 @@ help:
 	@echo "  make execution  run M2 accounting acceptance scenarios"
 	@echo "  make strategies run M3 strategies, no-look-ahead, and parallel checks"
 	@echo "  make wasm       build three portable WASI strategy modules"
+	@echo "  make m4         run 20-candidate walk-forward selection and freeze parameters"
 
 bootstrap:
 	@./scripts/bootstrap-go.sh
@@ -68,6 +69,9 @@ wasm:
 	@for strategy in buyhold trend meanreversion; do \
 		$(GO_ENV) GOOS=wasip1 GOARCH=wasm $(GO) build -trimpath -buildvcs=false -ldflags=-buildid= -o "$(BIN_DIR)/strategies/$$strategy.wasm" "./cmd/wasm/$$strategy"; \
 	done
+
+m4:
+	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project experiment select --budget 20
 
 clean:
 	@rm -rf "$(BIN_DIR)"

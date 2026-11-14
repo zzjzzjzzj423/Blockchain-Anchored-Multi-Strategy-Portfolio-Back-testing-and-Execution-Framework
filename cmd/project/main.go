@@ -15,7 +15,7 @@ import (
 	"msbd5017/portfolio-proof/internal/experiment"
 )
 
-const version = "0.4.0-m3"
+const version = "0.5.0-m4"
 
 func main() {
 	os.Exit(run(context.Background(), os.Args[1:]))
@@ -41,6 +41,8 @@ func run(ctx context.Context, args []string) int {
 		return runExecution(args[1:])
 	case "strategies":
 		return runStrategies(ctx, args[1:])
+	case "experiment":
+		return runExperiment(ctx, args[1:])
 	case "help", "-h", "--help":
 		printUsage()
 		return 0
@@ -52,6 +54,37 @@ func run(ctx context.Context, args []string) int {
 		printUsage()
 		return 2
 	}
+}
+
+func runExperiment(ctx context.Context, args []string) int {
+	if len(args) == 0 || args[0] != "select" {
+		fmt.Fprintln(os.Stderr, "experiment command requires: select")
+		return 2
+	}
+	flags := flag.NewFlagSet("project experiment select", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	root := flags.String("root", ".", "repository root")
+	budget := flags.Int("budget", experiment.MaximumCandidateBudget, "unique candidate budget")
+	output := flags.String("output", "reports/m4_parameter_selection.json", "validation report path")
+	if err := flags.Parse(args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid experiment options: %v\n", err)
+		return 2
+	}
+	report, err := experiment.ValidateM4(ctx, *root, *budget)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "M4 validation failed: %v\n", err)
+		return 1
+	}
+	reportPath := *output
+	if !filepath.IsAbs(reportPath) {
+		reportPath = filepath.Join(*root, reportPath)
+	}
+	if err := experiment.WriteM4Report(reportPath, report); err != nil {
+		fmt.Fprintf(os.Stderr, "write M4 report: %v\n", err)
+		return 1
+	}
+	fmt.Printf("M4 validation passed: candidates=%d folds=%d selected=%s holdout_opened=%t\n", report.CandidatesEvaluated, report.FoldCount, report.SelectedCandidateID, report.FinalHoldoutOpened)
+	return 0
 }
 
 func runStrategies(ctx context.Context, args []string) int {
@@ -174,6 +207,7 @@ func printUsage() {
   project data      build, download, normalize, or validate the fixed snapshot
   project execution validate the deterministic accounting core
   project strategies validate the M3 strategies and deterministic merge
+  project experiment select run M4 walk-forward selection and freeze parameters
   project version   print the CLI version
   project help      show this help
 `)
