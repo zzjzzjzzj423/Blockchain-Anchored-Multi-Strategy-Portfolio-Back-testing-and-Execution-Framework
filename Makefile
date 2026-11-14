@@ -7,7 +7,7 @@ GOFMT := $(dir $(GO))gofmt
 BIN_DIR := $(CURDIR)/bin
 GO_ENV := GOCACHE=$(CURDIR)/.cache/go-build GOMODCACHE=$(CURDIR)/.cache/go-mod GOTELEMETRY=off GOTOOLCHAIN=local
 
-.PHONY: help bootstrap doctor build test vet fmt fmt-check ci clean
+.PHONY: help bootstrap doctor build test vet fmt fmt-check ci data data-validate clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -16,6 +16,8 @@ help:
 	@echo "  make build      build bin/project"
 	@echo "  make test       run all Go tests"
 	@echo "  make ci         run the complete M0 quality gate"
+	@echo "  make data       download, verify, and normalize the M1 snapshot"
+	@echo "  make data-validate  rebuild M1 outputs from the local raw snapshot"
 
 bootstrap:
 	@./scripts/bootstrap-go.sh
@@ -45,6 +47,12 @@ fmt-check:
 	fi
 
 ci: fmt-check vet test build
+
+data:
+	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project data build
+
+data-validate:
+	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project data validate
 
 clean:
 	@rm -rf "$(BIN_DIR)"
