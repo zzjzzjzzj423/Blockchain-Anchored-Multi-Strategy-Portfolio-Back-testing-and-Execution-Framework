@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
+	"msbd5017/portfolio-proof/internal/canonical"
 	projectdata "msbd5017/portfolio-proof/internal/data"
 	"msbd5017/portfolio-proof/internal/doctor"
+	"msbd5017/portfolio-proof/internal/execution"
 )
 
 const version = "0.1.0-m0"
@@ -33,6 +36,8 @@ func run(ctx context.Context, args []string) int {
 		return 0
 	case "data":
 		return runData(ctx, args[1:])
+	case "execution":
+		return runExecution(args[1:])
 	case "help", "-h", "--help":
 		printUsage()
 		return 0
@@ -44,6 +49,44 @@ func run(ctx context.Context, args []string) int {
 		printUsage()
 		return 2
 	}
+}
+
+func runExecution(args []string) int {
+	if len(args) == 0 || args[0] != "validate" {
+		fmt.Fprintln(os.Stderr, "execution command requires: validate")
+		return 2
+	}
+	flags := flag.NewFlagSet("project execution validate", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	output := flags.String("output", "reports/m2_execution_validation.json", "validation report path")
+	if err := flags.Parse(args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid execution options: %v\n", err)
+		return 2
+	}
+	if _, err := execution.LoadFrozenConfig(".", "m2_validation"); err != nil {
+		fmt.Fprintf(os.Stderr, "execution config failed: %v\n", err)
+		return 1
+	}
+	report, validationErr := execution.ValidateM2()
+	content, err := canonical.JSON(report)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "encode execution report: %v\n", err)
+		return 1
+	}
+	if err := os.MkdirAll(filepath.Dir(*output), 0o755); err != nil {
+		fmt.Fprintf(os.Stderr, "create report directory: %v\n", err)
+		return 1
+	}
+	if err := os.WriteFile(*output, content, 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "write execution report: %v\n", err)
+		return 1
+	}
+	if validationErr != nil {
+		fmt.Fprintln(os.Stderr, validationErr)
+		return 1
+	}
+	fmt.Printf("execution validation passed: days=%d trades=%d ledger_sha256=%s\n", report.Days, report.Trades, report.GoldenLedgerSHA256)
+	return 0
 }
 
 func runData(ctx context.Context, args []string) int {
@@ -96,6 +139,7 @@ func printUsage() {
 	fmt.Print(`Usage:
   project doctor    check required and future toolchains
   project data      build, download, normalize, or validate the fixed snapshot
+  project execution validate the deterministic accounting core
   project version   print the CLI version
   project help      show this help
 `)
