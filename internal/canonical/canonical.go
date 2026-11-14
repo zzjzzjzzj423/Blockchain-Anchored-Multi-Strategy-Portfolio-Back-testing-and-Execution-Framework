@@ -8,6 +8,8 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 const decimalPlaces = 12
@@ -71,6 +73,10 @@ func JSON(value any) ([]byte, error) {
 	if err := decoder.Decode(&document); err != nil {
 		return nil, fmt.Errorf("decode intermediate JSON: %w", err)
 	}
+	document, err = normalizeJSON(document)
+	if err != nil {
+		return nil, err
+	}
 
 	var output bytes.Buffer
 	encoder := json.NewEncoder(&output)
@@ -79,4 +85,37 @@ func JSON(value any) ([]byte, error) {
 		return nil, fmt.Errorf("encode canonical JSON: %w", err)
 	}
 	return output.Bytes(), nil
+}
+
+func normalizeJSON(value any) (any, error) {
+	switch typed := value.(type) {
+	case string:
+		return norm.NFC.String(typed), nil
+	case []any:
+		result := make([]any, len(typed))
+		for index, item := range typed {
+			normalized, err := normalizeJSON(item)
+			if err != nil {
+				return nil, err
+			}
+			result[index] = normalized
+		}
+		return result, nil
+	case map[string]any:
+		result := make(map[string]any, len(typed))
+		for key, item := range typed {
+			normalizedKey := norm.NFC.String(key)
+			if _, exists := result[normalizedKey]; exists {
+				return nil, fmt.Errorf("JSON keys collide after NFC normalization")
+			}
+			normalized, err := normalizeJSON(item)
+			if err != nil {
+				return nil, err
+			}
+			result[normalizedKey] = normalized
+		}
+		return result, nil
+	default:
+		return value, nil
+	}
 }

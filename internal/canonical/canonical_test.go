@@ -45,6 +45,52 @@ func TestJSONSortsKeysAndEndsWithLF(t *testing.T) {
 	}
 }
 
+func TestJSONNormalizesUnicodeNFC(t *testing.T) {
+	t.Parallel()
+
+	precomposed, err := JSON(map[string]any{"name": "caf\u00e9"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	decomposed, err := JSON(map[string]any{"name": "cafe\u0301"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(precomposed) != string(decomposed) {
+		t.Fatalf("NFC mismatch: %q != %q", precomposed, decomposed)
+	}
+}
+
+func TestJSONRejectsKeysThatCollideAfterNFC(t *testing.T) {
+	t.Parallel()
+
+	_, err := JSON(map[string]any{"caf\u00e9": 1, "cafe\u0301": 2})
+	if err == nil {
+		t.Fatal("colliding normalized keys were accepted")
+	}
+}
+
+func TestCanonicalErrorPathsAndNestedNormalization(t *testing.T) {
+	t.Parallel()
+
+	if _, err := Decimal12(math.Inf(1)); err == nil {
+		t.Fatal("infinite decimal accepted")
+	}
+	if _, err := DecimalString12("not-a-number"); err == nil {
+		t.Fatal("invalid decimal accepted")
+	}
+	if _, err := JSON(make(chan int)); err == nil {
+		t.Fatal("unsupported JSON value accepted")
+	}
+	value, err := JSON([]any{"cafe\u0301", map[string]any{"html": "<x>"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(value) != "[\"caf\u00e9\",{\"html\":\"<x>\"}]\n" {
+		t.Fatalf("nested canonical JSON = %q", value)
+	}
+}
+
 func TestDecimalString12UsesHalfEvenWithoutBinaryArtifacts(t *testing.T) {
 	t.Parallel()
 

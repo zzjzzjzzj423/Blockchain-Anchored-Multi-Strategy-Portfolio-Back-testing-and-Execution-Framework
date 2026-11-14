@@ -7,7 +7,7 @@ GOFMT := $(dir $(GO))gofmt
 BIN_DIR := $(CURDIR)/bin
 GO_ENV := GOCACHE=$(CURDIR)/.cache/go-build GOMODCACHE=$(CURDIR)/.cache/go-mod GOTELEMETRY=off GOTOOLCHAIN=local
 
-.PHONY: help bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 m5-freeze m5 clean
+.PHONY: help bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 m5-freeze m5 m6 clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -24,6 +24,7 @@ help:
 	@echo "  make m4         run 20-candidate walk-forward selection and freeze parameters"
 	@echo "  make m5-freeze  freeze the development-only regime threshold"
 	@echo "  make m5         run the one-time formal 2025 final holdout"
+	@echo "  make m6         build and verify the canonical evidence bundle 10 times"
 
 bootstrap:
 	@./scripts/bootstrap-go.sh
@@ -80,6 +81,9 @@ m5-freeze:
 
 m5:
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project experiment final
+
+m6: wasm
+	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project evidence build --rebuilds 10
 
 clean:
 	@rm -rf "$(BIN_DIR)"

@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0-M5 已完成，2025 final holdout 已按冻结参数正式运行一次**。四折 Walk-forward 仅使用 2021-2024 development 区间；2025 结果没有反馈到参数选择。下一阶段是 M6 canonical evidence bundle 与 Merkle。
+当前状态：**M0-M5 已完成，M6 canonical evidence 与 Merkle 构建器已就绪**。2025 final holdout 已按冻结参数正式运行一次，结果没有反馈到参数选择；M6 bundle 尚未正式生成。
 
 ## 规格与计划
 
@@ -182,6 +182,26 @@ Ensemble 的 2025 结果为：年化收益 `0.048342760182`、Sharpe `0.32869296
 - [`reports/m5_sensitivity.json`](reports/m5_sensitivity.json)：19 个 OFAT 场景及相对 baseline 变化；
 - [`reports/m5_run_log.json`](reports/m5_run_log.json)：正式运行序号、clean-tree 声明和源码 commit；
 - `artifacts/final_holdout/`：gross/net returns、signals、weights、orders、trades、ledger 和状态标签，默认不提交。
+
+## M6 Canonical evidence 与 Merkle
+
+在 clean commit 上执行正式 M6 构建：
+
+```bash
+make m6
+```
+
+命令会从固定输入完整重建 10 次 leaf set 和 Merkle root，然后写入 `artifacts/<run_id>/`。原始数据、规范、配置、development search trace、manifests、final results、确定性事件日志和 `run_manifest.json` 全部进入树；`merkle/` proofs、manifest 及未来 `chain/` 文件明确排除，避免循环依赖。
+
+独立验证和单文件 proof：
+
+```bash
+project evidence verify --bundle artifacts/<run_id>
+project evidence prove --bundle artifacts/<run_id> --path results/trades.csv
+project evidence verify-proof --bundle artifacts/<run_id> --proof artifacts/<run_id>/merkle/proofs/<index>.json
+```
+
+Leaf 使用 `SHA256(0x00 || uint32_be(path_len) || NFC_path || uint64_be(content_len) || content)`；内部节点使用 `SHA256(0x01 || left || right)`。叶子按 UTF-8 路径字节排序，奇数节点复制最后一个节点，proof 显式记录 sibling 左右方向。
 
 ## 目录
 

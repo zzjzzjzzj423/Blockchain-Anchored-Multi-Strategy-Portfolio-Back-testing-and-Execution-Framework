@@ -11,11 +11,12 @@ import (
 	"msbd5017/portfolio-proof/internal/canonical"
 	projectdata "msbd5017/portfolio-proof/internal/data"
 	"msbd5017/portfolio-proof/internal/doctor"
+	"msbd5017/portfolio-proof/internal/evidence"
 	"msbd5017/portfolio-proof/internal/execution"
 	"msbd5017/portfolio-proof/internal/experiment"
 )
 
-const version = "0.6.0-m5"
+const version = "0.7.0-m6"
 
 func main() {
 	os.Exit(run(context.Background(), os.Args[1:]))
@@ -43,6 +44,8 @@ func run(ctx context.Context, args []string) int {
 		return runStrategies(ctx, args[1:])
 	case "experiment":
 		return runExperiment(ctx, args[1:])
+	case "evidence":
+		return runEvidence(ctx, args[1:])
 	case "help", "-h", "--help":
 		printUsage()
 		return 0
@@ -52,6 +55,79 @@ func run(ctx context.Context, args []string) int {
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command %q\n\n", args[0])
 		printUsage()
+		return 2
+	}
+}
+
+func runEvidence(ctx context.Context, args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "evidence command requires one of: build, verify, prove, verify-proof")
+		return 2
+	}
+	action := args[0]
+	flags := flag.NewFlagSet("project evidence "+action, flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	root := flags.String("root", ".", "repository root")
+	bundle := flags.String("bundle", "", "evidence bundle path")
+	leafPath := flags.String("path", "", "bundle-relative leaf path")
+	proofPath := flags.String("proof", "", "proof JSON path")
+	rebuilds := flags.Int("rebuilds", 10, "deterministic root build count")
+	if err := flags.Parse(args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid evidence options: %v\n", err)
+		return 2
+	}
+	resolve := func(value string) string {
+		if value == "" || filepath.IsAbs(value) {
+			return value
+		}
+		return filepath.Join(*root, value)
+	}
+	switch action {
+	case "build":
+		report, err := evidence.Build(ctx, *root, *rebuilds)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "M6 evidence build failed: %v\n", err)
+			return 1
+		}
+		fmt.Printf("M6 evidence passed: run_id=%s leaves=%d root=%s rebuilds=%d\n", report.RunID, report.LeafCount, report.MerkleRoot, report.DeterministicBuilds)
+		return 0
+	case "verify":
+		if *bundle == "" {
+			fmt.Fprintln(os.Stderr, "evidence verify requires --bundle")
+			return 2
+		}
+		report, err := evidence.VerifyBundle(resolve(*bundle))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "bundle verification failed: %v\n", err)
+			return 1
+		}
+		fmt.Printf("bundle verified: run_id=%s leaves=%d root=%s\n", report.RunID, report.LeafCount, report.MerkleRoot)
+		return 0
+	case "prove":
+		if *bundle == "" || *leafPath == "" {
+			fmt.Fprintln(os.Stderr, "evidence prove requires --bundle and --path")
+			return 2
+		}
+		name, err := evidence.FindProof(resolve(*bundle), *leafPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "find proof: %v\n", err)
+			return 1
+		}
+		fmt.Println(name)
+		return 0
+	case "verify-proof":
+		if *bundle == "" || *proofPath == "" {
+			fmt.Fprintln(os.Stderr, "evidence verify-proof requires --bundle and --proof")
+			return 2
+		}
+		if err := evidence.VerifyProofFile(resolve(*bundle), resolve(*proofPath)); err != nil {
+			fmt.Fprintf(os.Stderr, "proof verification failed: %v\n", err)
+			return 1
+		}
+		fmt.Println("proof verified")
+		return 0
+	default:
+		fmt.Fprintf(os.Stderr, "unknown evidence command %q\n", action)
 		return 2
 	}
 }
@@ -246,6 +322,10 @@ func printUsage() {
   project experiment select run M4 walk-forward selection and freeze parameters
   project experiment freeze-final freeze the M5 regime threshold without opening 2025
   project experiment final run the one-time formal 2025 holdout experiment
+  project evidence build build the canonical bundle and ordered SHA-256 Merkle tree
+  project evidence verify verify a complete bundle and every inclusion proof
+  project evidence prove locate a leaf inclusion proof
+  project evidence verify-proof verify one proof against bundle content and root
   project version   print the CLI version
   project help      show this help
 `)
