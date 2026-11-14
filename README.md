@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0-M5 已完成，M6 canonical evidence 与 Merkle 构建器已就绪**。2025 final holdout 已按冻结参数正式运行一次，结果没有反馈到参数选择；M6 bundle 尚未正式生成。
+当前状态：**M0-M6 已完成**。2025 final holdout 已按冻结参数正式运行一次，结果没有反馈到参数选择；canonical evidence bundle、SHA-256 Merkle root 和全部 inclusion proofs 已生成并验证。下一阶段是 M7 Solidity Registry 与链上 proof。
 
 ## 规格与计划
 
@@ -193,6 +193,16 @@ make m6
 
 命令会从固定输入完整重建 10 次 leaf set 和 Merkle root，然后写入 `artifacts/<run_id>/`。原始数据、规范、配置、development search trace、manifests、final results、确定性事件日志和 `run_manifest.json` 全部进入树；`merkle/` proofs、manifest 及未来 `chain/` 文件明确排除，避免循环依赖。
 
+冻结结果：
+
+```text
+run_id:     098376de7f855b9e
+leaf_count: 568
+root:       05136f84d6b1faa9226fd7b1a58b691707dc90be18688a2485fcbc3b7defa532
+rebuilds:   10/10 identical
+proofs:     568/568 valid
+```
+
 独立验证和单文件 proof：
 
 ```bash
@@ -202,6 +212,12 @@ project evidence verify-proof --bundle artifacts/<run_id> --proof artifacts/<run
 ```
 
 Leaf 使用 `SHA256(0x00 || uint32_be(path_len) || NFC_path || uint64_be(content_len) || content)`；内部节点使用 `SHA256(0x01 || left || right)`。叶子按 UTF-8 路径字节排序，奇数节点复制最后一个节点，proof 显式记录 sibling 左右方向。
+
+M6 报告：
+
+- [`reports/m6_evidence_bundle.json`](reports/m6_evidence_bundle.json)：run ID、root、568 个 leaves 与 10 次重建结果；
+- [`reports/m6_coverage_gap.json`](reports/m6_coverage_gap.json)：canonical/Merkle 覆盖率及 evidence orchestration 差距；
+- `artifacts/098376de7f855b9e/`：完整 bundle、Merkle manifest 和 568 个 proofs，默认不提交。
 
 ## 目录
 

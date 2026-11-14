@@ -1,0 +1,1 @@
+{"canonical_coverage":"92.3%","evidence_coverage":"39.3%","evidence_gap":"filesystem assembly, Git/toolchain discovery, and one-time report orchestration are exercised by the successful real-bundle integration gate rather than isolated unit fixtures","merkle_coverage":"92.0%","schema_version":"1.0.0","status":"passed_with_documented_orchestration_gap"}
