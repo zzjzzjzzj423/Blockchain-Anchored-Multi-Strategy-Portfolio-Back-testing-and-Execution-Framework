@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0 已完成，M1 尚未开始**。尚未下载市场数据、实现策略或读取 2025 final holdout。
+当前状态：**M0、M1 已完成，M2 尚未开始**。固定市场数据已经完成机械校验和规范化；尚未实现策略，也未使用 2025 final holdout 进行调参或绩效分析。
 
 ## 规格与计划
 
@@ -41,11 +41,39 @@ make test
 
 ```text
 project doctor   检查工具可用性、版本和首次需要它的里程碑
+project data build      下载、校验并规范化固定数据快照
+project data download   只下载、校验 checksum 并解压
+project data normalize  从本地 raw snapshot 重建规范化产物
+project data validate   从本地 raw snapshot 重跑全部数据校验
 project help     显示帮助
 project version  显示程序版本
 ```
 
-其余数据、策略、证据和链上命令将在对应里程碑中实现，当前不会放置返回假成功的占位命令。
+其余策略、证据和链上命令将在对应里程碑中实现，当前不会放置返回假成功的占位命令。
+
+## M1 固定数据快照
+
+完整构建命令：
+
+```bash
+make data
+```
+
+只使用已经下载的 raw snapshot 重放校验：
+
+```bash
+make data-validate
+```
+
+输出包括：
+
+- `data/raw/`：180 个 ZIP、180 个官方 CHECKSUM 和 180 个解压 CSV，默认不提交；
+- `data/normalized/daily_ohlcv.csv`：按 `date ASC, symbol ASC` 排序的 5,478 行日线，默认不提交；
+- [`data/data_manifest.json`](data/data_manifest.json)：URL、checksum、压缩与解压文件 hash、行数、时间戳单位；
+- [`data/validation_report.json`](data/validation_report.json)：日期连续性、重复值、OHLC 和时间戳边界结果；
+- [`data/LICENSE_DATA.md`](data/LICENSE_DATA.md)：Binance Vision 数据署名与使用限制。
+
+数据管道会机械处理 2025 年微秒时间戳，但在 M5 门禁之前，任何策略、代理或参数选择代码都不得读取 2025 数据。
 
 ## 目录
 
