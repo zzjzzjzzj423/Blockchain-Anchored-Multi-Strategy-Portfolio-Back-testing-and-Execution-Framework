@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0、M1、M2 已完成，M3 尚未开始**。固定市场数据和独立执行会计核心已经通过验收；尚未实现策略，也未使用 2025 final holdout 进行调参或绩效分析。
+当前状态：**M0、M1、M2、M3 已完成，M4 尚未开始**。三种基础策略已在 2021-2024 development 区间完成无前视、滞后一日执行和串并行一致性验收；2025 final holdout 仍未用于调参或绩效分析。
 
 ## 规格与计划
 
@@ -46,6 +46,7 @@ project data download   只下载、校验 checksum 并解压
 project data normalize  从本地 raw snapshot 重建规范化产物
 project data validate   从本地 raw snapshot 重跑全部数据校验
 project execution validate  运行 M2 手工会计场景并生成确定性报告
+project strategies validate 运行 M3 三策略、无前视和串并行一致性验收
 project help     显示帮助
 project version  显示程序版本
 ```
@@ -103,12 +104,34 @@ net_pnl = gross_pnl - commission - slippage
 
 两个归一化残差都必须小于 `1e-10`。
 
+## M3 三种基础策略
+
+运行完整 M3 验收：
+
+```bash
+make strategies
+```
+
+该命令先生成三个 portable WASI 模块，再以串行和并行两种模式运行 Buy-and-hold、SMA trend（20/100）和有状态 z-score mean reversion（20/-1/0）。统一时间语义是：日期 `d` 收盘后生成信号，日期 `d+1` 收盘执行，随后才承担持仓收益。
+
+核心文件：
+
+- [`configs/strategies.json`](configs/strategies.json)：development 边界、资产和基准参数；
+- [`configs/argo.json`](configs/argo.json)：Argo 来源版本及隔离式 adapter 决策；
+- [`internal/strategy/strategy.go`](internal/strategy/strategy.go)：只暴露历史区间查询的策略宿主边界；
+- [`internal/experiment/runner.go`](internal/experiment/runner.go)：滞后执行、串并行运行及稳定合并；
+- [`reports/m3_strategy_validation.json`](reports/m3_strategy_validation.json)：产物和 WASM hash、无前视及一致性结果。
+
+完整 CSV 证据写入 `artifacts/development/base_strategies/`，包含 signals、target/executed weights、orders、trades、returns 和 ledger，默认不提交。策略数据加载器在进入策略前即截断 2025 数据。
+
+Argo 当前 `main`（记录于 `configs/argo.json`）要求 Go 1.26.2，项目 module baseline 是 Go 1.24.0，固定构建工具链是 Go 1.27.4，因此工具链兼容。M3 仍使用与 Argo `GetRange` 对应的 adapter boundary 隔离策略数学，并生成 portable WASI 核心模块；验收结果只以本项目冻结的执行会计引擎为准，不受 Argo host 自身成交语义影响。真正的 Argo host registration wrapper 不属于本次 M3 验收产物，后续可在不改变策略或回测语义的前提下接入。
+
 ## 目录
 
 ```text
 cmd/project/          CLI 入口
 internal/doctor/      环境预检
-internal/*            后续领域、执行、实验和证据模块
+internal/*            领域、执行、策略运行、实验和证据模块
 strategies/           三种策略插件
 contracts/            Solidity、测试和部署脚本
 configs/              固定实验配置和 schema
