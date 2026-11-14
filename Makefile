@@ -7,7 +7,7 @@ GOFMT := $(dir $(GO))gofmt
 BIN_DIR := $(CURDIR)/bin
 GO_ENV := GOCACHE=$(CURDIR)/.cache/go-build GOMODCACHE=$(CURDIR)/.cache/go-mod GOTELEMETRY=off GOTOOLCHAIN=local
 
-.PHONY: help bootstrap doctor build test vet fmt fmt-check ci data data-validate execution clean
+.PHONY: help bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -19,6 +19,8 @@ help:
 	@echo "  make data       download, verify, and normalize the M1 snapshot"
 	@echo "  make data-validate  rebuild M1 outputs from the local raw snapshot"
 	@echo "  make execution  run M2 accounting acceptance scenarios"
+	@echo "  make strategies run M3 strategies, no-look-ahead, and parallel checks"
+	@echo "  make wasm       build three portable WASI strategy modules"
 
 bootstrap:
 	@./scripts/bootstrap-go.sh
@@ -57,6 +59,15 @@ data-validate:
 
 execution:
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project execution validate
+
+strategies: wasm
+	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project strategies validate
+
+wasm:
+	@mkdir -p "$(BIN_DIR)/strategies"
+	@for strategy in buyhold trend meanreversion; do \
+		$(GO_ENV) GOOS=wasip1 GOARCH=wasm $(GO) build -trimpath -ldflags=-buildid= -o "$(BIN_DIR)/strategies/$$strategy.wasm" "./cmd/wasm/$$strategy"; \
+	done
 
 clean:
 	@rm -rf "$(BIN_DIR)"

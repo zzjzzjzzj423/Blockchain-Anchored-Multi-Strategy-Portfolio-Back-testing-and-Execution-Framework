@@ -1,0 +1,1 @@
+{"adapter_api":"TradingStrategy/GetRange","framework_commit":"5000407e138e3d38bfa98f3318e02dd4fdbcaa17","framework_go_version":"1.26.2","framework_url":"https://github.com/rxtech-lab/argo-trading","integration_mode":"deterministic-core adapter boundary","module_go_baseline":"1.24.0","pinned_build_go_version":"1.27.4","schema_version":"1.0.0","toolchain_compatible":true}

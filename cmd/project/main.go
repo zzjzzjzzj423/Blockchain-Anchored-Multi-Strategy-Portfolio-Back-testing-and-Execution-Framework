@@ -12,9 +12,10 @@ import (
 	projectdata "msbd5017/portfolio-proof/internal/data"
 	"msbd5017/portfolio-proof/internal/doctor"
 	"msbd5017/portfolio-proof/internal/execution"
+	"msbd5017/portfolio-proof/internal/experiment"
 )
 
-const version = "0.1.0-m0"
+const version = "0.4.0-m3"
 
 func main() {
 	os.Exit(run(context.Background(), os.Args[1:]))
@@ -38,6 +39,8 @@ func run(ctx context.Context, args []string) int {
 		return runData(ctx, args[1:])
 	case "execution":
 		return runExecution(args[1:])
+	case "strategies":
+		return runStrategies(ctx, args[1:])
 	case "help", "-h", "--help":
 		printUsage()
 		return 0
@@ -49,6 +52,36 @@ func run(ctx context.Context, args []string) int {
 		printUsage()
 		return 2
 	}
+}
+
+func runStrategies(ctx context.Context, args []string) int {
+	if len(args) == 0 || args[0] != "validate" {
+		fmt.Fprintln(os.Stderr, "strategies command requires: validate")
+		return 2
+	}
+	flags := flag.NewFlagSet("project strategies validate", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	root := flags.String("root", ".", "repository root")
+	output := flags.String("output", "reports/m3_strategy_validation.json", "validation report path")
+	if err := flags.Parse(args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid strategy options: %v\n", err)
+		return 2
+	}
+	report, err := experiment.ValidateM3(ctx, *root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "strategy validation failed: %v\n", err)
+		return 1
+	}
+	reportPath := *output
+	if !filepath.IsAbs(reportPath) {
+		reportPath = filepath.Join(*root, reportPath)
+	}
+	if err := experiment.WriteM3Report(reportPath, report); err != nil {
+		fmt.Fprintf(os.Stderr, "write strategy report: %v\n", err)
+		return 1
+	}
+	fmt.Printf("strategy validation passed: days=%d strategies=%d parallel_identical=%t no_look_ahead=%t\n", report.Days, report.Strategies, report.ParallelByteIdentical, report.NoLookAhead)
+	return 0
 }
 
 func runExecution(args []string) int {
@@ -140,6 +173,7 @@ func printUsage() {
   project doctor    check required and future toolchains
   project data      build, download, normalize, or validate the fixed snapshot
   project execution validate the deterministic accounting core
+  project strategies validate the M3 strategies and deterministic merge
   project version   print the CLI version
   project help      show this help
 `)

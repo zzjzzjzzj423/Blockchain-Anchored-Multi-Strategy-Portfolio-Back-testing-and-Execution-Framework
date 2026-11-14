@@ -1,0 +1,1 @@
+{"buy_and_hold":{"rebalance_after_initial":false},"development_end":"2024-12-31","development_start":"2021-01-01","mean_reversion":{"entry_z":"-1.000000000000","exit_z":"0.000000000000","lookback":20,"standard_deviation":"population"},"schema_version":"1.0.0","symbols":["BTCUSDT","ETHUSDT","SOLUSDT"],"trend":{"fast_window":20,"slow_window":100}}
