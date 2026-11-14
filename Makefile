@@ -66,7 +66,7 @@ strategies: wasm
 wasm:
 	@mkdir -p "$(BIN_DIR)/strategies"
 	@for strategy in buyhold trend meanreversion; do \
-		$(GO_ENV) GOOS=wasip1 GOARCH=wasm $(GO) build -trimpath -ldflags=-buildid= -o "$(BIN_DIR)/strategies/$$strategy.wasm" "./cmd/wasm/$$strategy"; \
+		$(GO_ENV) GOOS=wasip1 GOARCH=wasm $(GO) build -trimpath -buildvcs=false -ldflags=-buildid= -o "$(BIN_DIR)/strategies/$$strategy.wasm" "./cmd/wasm/$$strategy"; \
 	done
 
 clean:
