@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0-M4 已完成，参数已经冻结，M5 门禁与分析代码已就绪**。四折 Walk-forward 已在 2021-2024 development 区间完成；2025 final holdout 尚未打开，也未用于调参或绩效分析。
+当前状态：**M0-M5 已完成，2025 final holdout 已按冻结参数正式运行一次**。四折 Walk-forward 仅使用 2021-2024 development 区间；2025 结果没有反馈到参数选择。下一阶段是 M6 canonical evidence bundle 与 Merkle。
 
 ## 规格与计划
 
@@ -170,7 +170,18 @@ make m5-freeze
 make m5
 ```
 
-正式命令在已有 M5 报告时拒绝覆盖。它运行三个基础策略和滞后 Ensemble，输出总体指标、四种滞后市场状态指标，以及 baseline、参数和成本 one-factor-at-a-time ±20% 共 19 个场景。敏感性结果仅用于解释，不能反馈到参数选择。
+正式运行已从 clean commit `b075cdd` 完成，命令在已有 M5 报告时拒绝覆盖。它运行三个基础策略和滞后 Ensemble，输出总体指标、四种滞后市场状态指标，以及 baseline、参数和成本 one-factor-at-a-time ±20% 共 19 个场景。敏感性结果仅用于解释，不能反馈到参数选择。
+
+Ensemble 的 2025 结果为：年化收益 `0.048342760182`、Sharpe `0.328692969052`、最大回撤 `0.248998005359`。四种状态分别包含 Bull/LowVol 157 日、Bull/HighVol 40 日、Bear/LowVol 104 日、Bear/HighVol 64 日。
+
+主要证据：
+
+- [`configs/final_experiment.json`](configs/final_experiment.json)：holdout 前冻结的阈值、输入 hash 和参数身份；
+- [`reports/m5_final_holdout.json`](reports/m5_final_holdout.json)：四种策略的 2025 总体指标和 artifact hashes；
+- [`reports/m5_regime_metrics.json`](reports/m5_regime_metrics.json)：四种滞后市场状态指标；
+- [`reports/m5_sensitivity.json`](reports/m5_sensitivity.json)：19 个 OFAT 场景及相对 baseline 变化；
+- [`reports/m5_run_log.json`](reports/m5_run_log.json)：正式运行序号、clean-tree 声明和源码 commit；
+- `artifacts/final_holdout/`：gross/net returns、signals、weights、orders、trades、ledger 和状态标签，默认不提交。
 
 ## 目录
 
