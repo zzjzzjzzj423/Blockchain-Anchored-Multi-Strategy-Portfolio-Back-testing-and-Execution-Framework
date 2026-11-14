@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0、M1、M2、M3 已完成，M4 尚未开始**。三种基础策略已在 2021-2024 development 区间完成无前视、滞后一日执行和串并行一致性验收；2025 final holdout 仍未用于调参或绩效分析。
+当前状态：**M0-M4 已完成，参数已经冻结，M5 尚未开始**。四折 Walk-forward 已在 2021-2024 development 区间完成；2025 final holdout 仍未用于调参或绩效分析。
 
 ## 规格与计划
 
@@ -47,6 +47,7 @@ project data normalize  从本地 raw snapshot 重建规范化产物
 project data validate   从本地 raw snapshot 重跑全部数据校验
 project execution validate  运行 M2 手工会计场景并生成确定性报告
 project strategies validate 运行 M3 三策略、无前视和串并行一致性验收
+project experiment select 运行 M4 Walk-forward 搜索并冻结参数
 project help     显示帮助
 project version  显示程序版本
 ```
@@ -125,6 +126,35 @@ make strategies
 完整 CSV 证据写入 `artifacts/development/base_strategies/`，包含 signals、target/executed weights、orders、trades、returns 和 ledger，默认不提交。策略数据加载器在进入策略前即截断 2025 数据。
 
 Argo 当前 `main`（记录于 `configs/argo.json`）要求 Go 1.26.2，项目 module baseline 是 Go 1.24.0，固定构建工具链是 Go 1.27.4，因此工具链兼容。M3 仍使用与 Argo `GetRange` 对应的 adapter boundary 隔离策略数学，并生成 portable WASI 核心模块；验收结果只以本项目冻结的执行会计引擎为准，不受 Argo host 自身成交语义影响。真正的 Argo host registration wrapper 不属于本次 M3 验收产物，后续可在不改变策略或回测语义的前提下接入。
+
+## M4 Walk-forward 参数选择与 Ensemble
+
+运行冻结的 20 候选选择流程：
+
+```bash
+make m4
+```
+
+四个 validation fold、参数空间和选择规则均来自 `SPEC.md`。第一个候选固定为 baseline；其余候选由 `AgentProposer` 的 `manual_deterministic` fallback 根据当前 validation leader 进行确定性空间探索。该过程不调用模型，完整 trace 可重复 hash，也不声称遍历了 1,458 个联合候选或找到了全局最优解。
+
+冻结结果：
+
+```text
+SMA trend:          fast=10, slow=150
+Mean reversion:     lookback=10, entry_z=-0.5, exit_z=-0.25
+Ensemble allocator: reliability_window=30, volatility_window=30
+Validation median net Sharpe: 1.412998347587
+```
+
+主要证据：
+
+- [`configs/selected_parameters.json`](configs/selected_parameters.json)：冻结参数、选择指标和 search trace hash；
+- [`configs/schemas/parameters.schema.json`](configs/schemas/parameters.schema.json)：有限参数空间 schema；
+- [`reports/m4_parameter_selection.json`](reports/m4_parameter_selection.json)：20 候选、四折、缓存和产物 hash；
+- [`reports/m4_coverage_gap.json`](reports/m4_coverage_gap.json)：核心覆盖率与 orchestration 差距清单；
+- `artifacts/development/walk_forward/`：search trace、fold metrics、development metrics、Ensemble 权重和完整账本，默认不提交。
+
+Ensemble 日期 `d` 的 reliability 与 volatility 只读取 `d-1` 及以前的基础策略净收益，日期 `d` 形成的资产目标在 `d+1` 收盘执行。`selected_parameters.json` 明确记录 `final_holdout_opened=false`；M5 之前不得读取这些 development 结果重新改变参数。
 
 ## 目录
 
