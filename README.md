@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0、M1 已完成，M2 尚未开始**。固定市场数据已经完成机械校验和规范化；尚未实现策略，也未使用 2025 final holdout 进行调参或绩效分析。
+当前状态：**M0、M1、M2 已完成，M3 尚未开始**。固定市场数据和独立执行会计核心已经通过验收；尚未实现策略，也未使用 2025 final holdout 进行调参或绩效分析。
 
 ## 规格与计划
 
@@ -45,6 +45,7 @@ project data build      下载、校验并规范化固定数据快照
 project data download   只下载、校验 checksum 并解压
 project data normalize  从本地 raw snapshot 重建规范化产物
 project data validate   从本地 raw snapshot 重跑全部数据校验
+project execution validate  运行 M2 手工会计场景并生成确定性报告
 project help     显示帮助
 project version  显示程序版本
 ```
@@ -74,6 +75,33 @@ make data-validate
 - [`data/LICENSE_DATA.md`](data/LICENSE_DATA.md)：Binance Vision 数据署名与使用限制。
 
 数据管道会机械处理 2025 年微秒时间戳，但在 M5 门禁之前，任何策略、代理或参数选择代码都不得读取 2025 数据。
+
+## M2 执行会计核心
+
+运行完整 M2 验收：
+
+```bash
+make execution
+```
+
+会计核心独立于策略，支持纯现金、买入、卖出、跨资产调仓、统一现金缩单和全清仓。执行顺序固定为卖单优先，同方向按 `symbol ASC`；成交数量限制为 8 位小数，低于 10 USDT 的订单会被确定性跳过。
+
+核心文件：
+
+- [`configs/costs.json`](configs/costs.json)：冻结的资金、成本、精度和容差；
+- [`internal/domain/types.go`](internal/domain/types.go)：MarketBar、Signal、TargetWeight、Order、Trade、Position 和 LedgerEntry；
+- [`internal/execution/engine.go`](internal/execution/engine.go)：成本、现金、持仓、PnL 和调仓逻辑；
+- [`tests/golden/execution_ledger.csv`](tests/golden/execution_ledger.csv)：五日手工场景 golden ledger；
+- [`reports/m2_execution_validation.json`](reports/m2_execution_validation.json)：M2 确定性验收报告。
+
+每日同时验证：
+
+```text
+equity = cash + Σ position_value
+net_pnl = gross_pnl - commission - slippage
+```
+
+两个归一化残差都必须小于 `1e-10`。
 
 ## 目录
 
