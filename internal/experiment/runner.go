@@ -44,6 +44,22 @@ type namedResult struct {
 // RunAll executes fresh strategy instances either serially or concurrently.
 // Results are always merged with the same canonical ordering.
 func RunAll(ctx context.Context, bars []domain.MarketBar, factories []strategy.Factory, parallel bool) (Result, error) {
+	return runAll(ctx, bars, factories, parallel, func(name string) execution.Config {
+		return execution.DefaultConfig(name)
+	})
+}
+
+// RunAllWithCosts is used only by the frozen one-factor sensitivity runner.
+func RunAllWithCosts(ctx context.Context, bars []domain.MarketBar, factories []strategy.Factory, parallel bool, commissionRate, slippageRate float64) (Result, error) {
+	return runAll(ctx, bars, factories, parallel, func(name string) execution.Config {
+		config := execution.DefaultConfig(name)
+		config.CommissionRate = commissionRate
+		config.SlippageRate = slippageRate
+		return config
+	})
+}
+
+func runAll(ctx context.Context, bars []domain.MarketBar, factories []strategy.Factory, parallel bool, configFor func(string) execution.Config) (Result, error) {
 	days, err := groupDays(bars)
 	if err != nil {
 		return Result{}, err
@@ -61,7 +77,7 @@ func RunAll(ctx context.Context, bars []domain.MarketBar, factories []strategy.F
 			wait.Add(1)
 			go func() {
 				defer wait.Done()
-				result, runErr := runOne(ctx, days, factory)
+				result, runErr := runOne(ctx, days, factory, configFor(factory.Name))
 				channel <- namedResult{name: factory.Name, result: result, err: runErr}
 			}()
 		}
@@ -72,7 +88,7 @@ func RunAll(ctx context.Context, bars []domain.MarketBar, factories []strategy.F
 		}
 	} else {
 		for _, factory := range factories {
-			result, runErr := runOne(ctx, days, factory)
+			result, runErr := runOne(ctx, days, factory, configFor(factory.Name))
 			results = append(results, namedResult{name: factory.Name, result: result, err: runErr})
 		}
 	}
@@ -95,18 +111,21 @@ func RunAll(ctx context.Context, bars []domain.MarketBar, factories []strategy.F
 	return merged, nil
 }
 
-func runOne(ctx context.Context, days []day, factory strategy.Factory) (Result, error) {
+func runOne(ctx context.Context, days []day, factory strategy.Factory, config execution.Config) (Result, error) {
 	instance := factory.New()
 	if instance == nil || instance.Name() != factory.Name {
 		return Result{}, fmt.Errorf("factory name mismatch")
 	}
-	engine, err := execution.New(execution.DefaultConfig(factory.Name))
+	if config.Strategy != factory.Name {
+		return Result{}, fmt.Errorf("execution config strategy mismatch")
+	}
+	engine, err := execution.New(config)
 	if err != nil {
 		return Result{}, err
 	}
 	history := strategy.NewMemoryHistory()
 	var pending *strategy.Decision
-	previousEquity := execution.DefaultConfig(factory.Name).InitialCash
+	previousEquity := config.InitialCash
 	result := Result{}
 
 	for _, current := range days {

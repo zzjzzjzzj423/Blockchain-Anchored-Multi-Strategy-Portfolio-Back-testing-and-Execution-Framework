@@ -134,16 +134,36 @@ func MetricsFor(result Result, strategyName string, start, end time.Time) (metri
 	if end.Before(start) {
 		return metrics.Summary{}, fmt.Errorf("invalid metric period")
 	}
-	returns := make(map[string]ReturnRecord)
+	dates := make(map[string]struct{})
 	for _, record := range result.Returns {
 		if record.Strategy == strategyName && !record.Date.Before(start) && !record.Date.After(end) {
-			returns[record.Date.Format("2006-01-02")] = record
+			dates[record.Date.Format("2006-01-02")] = struct{}{}
+		}
+	}
+	return MetricsForDates(result, strategyName, dates)
+}
+
+// MetricsForDates evaluates an ordered, possibly non-contiguous regime subset.
+func MetricsForDates(result Result, strategyName string, dates map[string]struct{}) (metrics.Summary, error) {
+	if len(dates) == 0 {
+		return metrics.Summary{}, fmt.Errorf("metric date set is empty")
+	}
+	returns := make(map[string]ReturnRecord)
+	for _, record := range result.Returns {
+		date := record.Date.Format("2006-01-02")
+		if record.Strategy == strategyName {
+			if _, ok := dates[date]; ok {
+				returns[date] = record
+			}
 		}
 	}
 	ledgers := make([]domain.LedgerEntry, 0, len(returns))
 	for _, entry := range result.Ledger {
-		if entry.Strategy == strategyName && !entry.Date.Before(start) && !entry.Date.After(end) {
-			ledgers = append(ledgers, entry)
+		date := entry.Date.Format("2006-01-02")
+		if entry.Strategy == strategyName {
+			if _, ok := dates[date]; ok {
+				ledgers = append(ledgers, entry)
+			}
 		}
 	}
 	sort.Slice(ledgers, func(i, j int) bool { return ledgers[i].Date.Before(ledgers[j].Date) })

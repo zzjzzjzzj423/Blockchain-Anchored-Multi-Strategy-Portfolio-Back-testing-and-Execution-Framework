@@ -31,6 +31,18 @@ type EnsembleRun struct {
 // asset weights. Allocation for date d receives history only through d-1; the
 // resulting asset target is executed by the frozen engine on d+1.
 func RunEnsemble(ctx context.Context, bars []domain.MarketBar, base Result, parameters AllocatorParameters) (EnsembleRun, error) {
+	return runEnsemble(ctx, bars, base, parameters, execution.DefaultConfig(EnsembleName))
+}
+
+// RunEnsembleWithCosts mirrors RunAllWithCosts for OFAT cost sensitivity.
+func RunEnsembleWithCosts(ctx context.Context, bars []domain.MarketBar, base Result, parameters AllocatorParameters, commissionRate, slippageRate float64) (EnsembleRun, error) {
+	config := execution.DefaultConfig(EnsembleName)
+	config.CommissionRate = commissionRate
+	config.SlippageRate = slippageRate
+	return runEnsemble(ctx, bars, base, parameters, config)
+}
+
+func runEnsemble(ctx context.Context, bars []domain.MarketBar, base Result, parameters AllocatorParameters, config execution.Config) (EnsembleRun, error) {
 	days, err := groupDays(bars)
 	if err != nil {
 		return EnsembleRun{}, err
@@ -47,11 +59,14 @@ func RunEnsemble(ctx context.Context, bars []domain.MarketBar, base Result, para
 	for _, name := range strategies {
 		history[name] = []float64{}
 	}
-	engine, err := execution.New(execution.DefaultConfig(EnsembleName))
+	if config.Strategy != EnsembleName {
+		return EnsembleRun{}, fmt.Errorf("ensemble execution config strategy mismatch")
+	}
+	engine, err := execution.New(config)
 	if err != nil {
 		return EnsembleRun{}, err
 	}
-	previousEquity := execution.DefaultConfig(EnsembleName).InitialCash
+	previousEquity := config.InitialCash
 	var pending []domain.TargetWeight
 	run := EnsembleRun{}
 

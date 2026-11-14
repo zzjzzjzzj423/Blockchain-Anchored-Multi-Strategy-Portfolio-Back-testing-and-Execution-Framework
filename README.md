@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0-M4 已完成，参数已经冻结，M5 尚未开始**。四折 Walk-forward 已在 2021-2024 development 区间完成；2025 final holdout 仍未用于调参或绩效分析。
+当前状态：**M0-M4 已完成，参数已经冻结，M5 门禁与分析代码已就绪**。四折 Walk-forward 已在 2021-2024 development 区间完成；2025 final holdout 尚未打开，也未用于调参或绩效分析。
 
 ## 规格与计划
 
@@ -155,6 +155,22 @@ Validation median net Sharpe: 1.412998347587
 - `artifacts/development/walk_forward/`：search trace、fold metrics、development metrics、Ensemble 权重和完整账本，默认不提交。
 
 Ensemble 日期 `d` 的 reliability 与 volatility 只读取 `d-1` 及以前的基础策略净收益，日期 `d` 形成的资产目标在 `d+1` 收盘执行。`selected_parameters.json` 明确记录 `final_holdout_opened=false`；M5 之前不得读取这些 development 结果重新改变参数。
+
+## M5 Final holdout 门禁
+
+M5 分为两个明确阶段。首先在 clean commit 上只读取 development 数据，冻结市场状态波动率阈值：
+
+```bash
+make m5-freeze
+```
+
+提交生成的 `configs/final_experiment.json` 并再次确认工作区 clean 后，才可执行一次正式 2025 holdout：
+
+```bash
+make m5
+```
+
+正式命令在已有 M5 报告时拒绝覆盖。它运行三个基础策略和滞后 Ensemble，输出总体指标、四种滞后市场状态指标，以及 baseline、参数和成本 one-factor-at-a-time ±20% 共 19 个场景。敏感性结果仅用于解释，不能反馈到参数选择。
 
 ## 目录
 

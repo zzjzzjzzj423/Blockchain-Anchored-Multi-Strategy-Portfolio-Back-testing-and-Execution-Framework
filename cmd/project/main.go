@@ -15,7 +15,7 @@ import (
 	"msbd5017/portfolio-proof/internal/experiment"
 )
 
-const version = "0.5.0-m4"
+const version = "0.6.0-m5"
 
 func main() {
 	os.Exit(run(context.Background(), os.Args[1:]))
@@ -57,8 +57,44 @@ func run(ctx context.Context, args []string) int {
 }
 
 func runExperiment(ctx context.Context, args []string) int {
-	if len(args) == 0 || args[0] != "select" {
-		fmt.Fprintln(os.Stderr, "experiment command requires: select")
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "experiment command requires one of: select, freeze-final, final")
+		return 2
+	}
+	if args[0] == "freeze-final" {
+		flags := flag.NewFlagSet("project experiment freeze-final", flag.ContinueOnError)
+		flags.SetOutput(io.Discard)
+		root := flags.String("root", ".", "repository root")
+		if err := flags.Parse(args[1:]); err != nil {
+			fmt.Fprintf(os.Stderr, "invalid freeze-final options: %v\n", err)
+			return 2
+		}
+		config, err := experiment.FreezeM5Config(*root)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "M5 config freeze failed: %v\n", err)
+			return 1
+		}
+		fmt.Printf("M5 config frozen: candidate=%s threshold=%s holdout_opened=false\n", config.SelectedCandidateID, config.DevelopmentVolatilityThreshold)
+		return 0
+	}
+	if args[0] == "final" {
+		flags := flag.NewFlagSet("project experiment final", flag.ContinueOnError)
+		flags.SetOutput(io.Discard)
+		root := flags.String("root", ".", "repository root")
+		if err := flags.Parse(args[1:]); err != nil {
+			fmt.Fprintf(os.Stderr, "invalid final options: %v\n", err)
+			return 2
+		}
+		report, err := experiment.RunM5Formal(ctx, *root)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "M5 formal run failed: %v\n", err)
+			return 1
+		}
+		fmt.Printf("M5 formal run passed: days=365 scenarios=%d source=%s holdout_opened=%t\n", report.SensitivityScenarios, report.SourceCommit, report.FinalHoldoutOpened)
+		return 0
+	}
+	if args[0] != "select" {
+		fmt.Fprintf(os.Stderr, "unknown experiment command %q\n", args[0])
 		return 2
 	}
 	flags := flag.NewFlagSet("project experiment select", flag.ContinueOnError)
@@ -208,6 +244,8 @@ func printUsage() {
   project execution validate the deterministic accounting core
   project strategies validate the M3 strategies and deterministic merge
   project experiment select run M4 walk-forward selection and freeze parameters
+  project experiment freeze-final freeze the M5 regime threshold without opening 2025
+  project experiment final run the one-time formal 2025 holdout experiment
   project version   print the CLI version
   project help      show this help
 `)

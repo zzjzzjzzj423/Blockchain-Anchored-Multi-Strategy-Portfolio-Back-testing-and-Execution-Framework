@@ -16,14 +16,27 @@ import (
 // DevelopmentStart and DevelopmentEnd are the frozen in-sample boundaries.
 // Data after DevelopmentEnd may exist in the pinned snapshot but must not enter M3.
 var (
-	DevelopmentStart = time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
-	DevelopmentEnd   = time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	DevelopmentStart  = time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+	DevelopmentEnd    = time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	FinalHoldoutStart = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	FinalHoldoutEnd   = time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC)
 )
 
 // LoadDevelopment reads the normalized snapshot and returns only the frozen
 // development interval. Rows from 2025 are deliberately excluded here, before
 // any strategy receives market data.
 func LoadDevelopment(root string) ([]domain.MarketBar, error) {
+	return loadNormalizedInterval(root, DevelopmentStart, DevelopmentEnd)
+}
+
+// LoadFullSnapshot opens the final holdout. Callers must enforce the M5 gate
+// before invoking it. Earlier rows remain available as strategy warm-up, while
+// final metrics are computed only over FinalHoldoutStart..FinalHoldoutEnd.
+func LoadFullSnapshot(root string) ([]domain.MarketBar, error) {
+	return loadNormalizedInterval(root, DevelopmentStart, FinalHoldoutEnd)
+}
+
+func loadNormalizedInterval(root string, start, end time.Time) ([]domain.MarketBar, error) {
 	path := filepath.Join(root, filepath.FromSlash(normalizedRelativePath))
 	file, err := os.Open(path)
 	if err != nil {
@@ -64,7 +77,7 @@ func LoadDevelopment(root string) ([]domain.MarketBar, error) {
 		if err != nil {
 			return nil, fmt.Errorf("normalized row %d date: %w", row, err)
 		}
-		if date.Before(DevelopmentStart) || date.After(DevelopmentEnd) {
+		if date.Before(start) || date.After(end) {
 			continue
 		}
 		values := make([]float64, 5)
@@ -81,7 +94,7 @@ func LoadDevelopment(root string) ([]domain.MarketBar, error) {
 		})
 	}
 	if len(bars) == 0 {
-		return nil, fmt.Errorf("normalized data contains no development rows")
+		return nil, fmt.Errorf("normalized data contains no rows in requested interval")
 	}
 	return bars, nil
 }
