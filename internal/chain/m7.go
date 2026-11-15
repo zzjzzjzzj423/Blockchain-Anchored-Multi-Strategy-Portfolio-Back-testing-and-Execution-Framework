@@ -65,15 +65,27 @@ type commandRunner struct {
 }
 
 func RunM7(ctx context.Context, root string) (M7Report, error) {
-	clean, err := gitClean(root)
-	if err != nil || !clean {
-		return M7Report{}, fmt.Errorf("M7 deployment requires a clean Git tree")
-	}
+	return runM7(ctx, root, true)
+}
+
+// RehearseM7 repeats the deployment and proof gates on an ephemeral Anvil
+// without overwriting the frozen M7 evidence files.
+func RehearseM7(ctx context.Context, root string) (M7Report, error) {
+	return runM7(ctx, root, false)
+}
+
+func runM7(ctx context.Context, root string, persist bool) (M7Report, error) {
 	reportPath := filepath.Join(root, "reports", "m7_chain_validation.json")
-	if _, err := os.Stat(reportPath); err == nil {
-		return M7Report{}, fmt.Errorf("M7 report already exists")
-	} else if !os.IsNotExist(err) {
-		return M7Report{}, err
+	if persist {
+		clean, err := gitClean(root)
+		if err != nil || !clean {
+			return M7Report{}, fmt.Errorf("M7 deployment requires a clean Git tree")
+		}
+		if _, err := os.Stat(reportPath); err == nil {
+			return M7Report{}, fmt.Errorf("M7 report already exists")
+		} else if !os.IsNotExist(err) {
+			return M7Report{}, err
+		}
 	}
 	foundryBin := filepath.Join(root, ".tools", "foundry-v1.9.0", "bin")
 	runner := commandRunner{
@@ -203,10 +215,6 @@ func RunM7(ctx context.Context, root string) (M7Report, error) {
 	}
 	contractSource, _ := os.ReadFile(filepath.Join(root, "contracts", "src", "BacktestRegistry.sol"))
 
-	chainDirectory := filepath.Join(bundlePath, "chain")
-	if err := os.MkdirAll(chainDirectory, 0o755); err != nil {
-		return M7Report{}, err
-	}
 	artifacts := make(map[string][]byte)
 	artifacts["anchor_metadata.json"] = metadataBytes
 	artifacts["deployment.json"], err = canonical.JSON(map[string]any{
@@ -245,8 +253,14 @@ func RunM7(ctx context.Context, root string) (M7Report, error) {
 		if content == nil {
 			return M7Report{}, fmt.Errorf("encode chain artifact %s", name)
 		}
-		if err := os.WriteFile(filepath.Join(chainDirectory, name), content, 0o644); err != nil {
-			return M7Report{}, err
+		if persist {
+			chainDirectory := filepath.Join(bundlePath, "chain")
+			if err := os.MkdirAll(chainDirectory, 0o755); err != nil {
+				return M7Report{}, err
+			}
+			if err := os.WriteFile(filepath.Join(chainDirectory, name), content, 0o644); err != nil {
+				return M7Report{}, err
+			}
 		}
 		hashes[name] = digest(content)
 	}
@@ -263,8 +277,10 @@ func RunM7(ctx context.Context, root string) (M7Report, error) {
 	if err != nil {
 		return M7Report{}, err
 	}
-	if err := os.WriteFile(reportPath, reportBytes, 0o644); err != nil {
-		return M7Report{}, err
+	if persist {
+		if err := os.WriteFile(reportPath, reportBytes, 0o644); err != nil {
+			return M7Report{}, err
+		}
 	}
 	return report, nil
 }

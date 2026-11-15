@@ -18,7 +18,7 @@ import (
 	projectreplay "msbd5017/portfolio-proof/internal/replay"
 )
 
-const version = "0.9.0-m8"
+const version = "1.0.0-m9"
 
 func main() {
 	os.Exit(run(context.Background(), os.Args[1:]))
@@ -126,8 +126,8 @@ func runMutation(args []string) int {
 }
 
 func runChain(ctx context.Context, args []string) int {
-	if len(args) == 0 || args[0] != "deploy" {
-		fmt.Fprintln(os.Stderr, "chain command requires: deploy")
+	if len(args) == 0 || (args[0] != "deploy" && args[0] != "rehearse") {
+		fmt.Fprintln(os.Stderr, "chain command requires one of: deploy, rehearse")
 		return 2
 	}
 	flags := flag.NewFlagSet("project chain deploy", flag.ContinueOnError)
@@ -137,7 +137,13 @@ func runChain(ctx context.Context, args []string) int {
 		fmt.Fprintf(os.Stderr, "invalid chain options: %v\n", err)
 		return 2
 	}
-	report, err := chain.RunM7(ctx, *root)
+	var report chain.M7Report
+	var err error
+	if action := args[0]; action == "deploy" {
+		report, err = chain.RunM7(ctx, *root)
+	} else {
+		report, err = chain.RehearseM7(ctx, *root)
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "M7 chain validation failed: %v\n", err)
 		return 1
@@ -414,6 +420,7 @@ func printUsage() {
   project evidence prove locate a leaf inclusion proof
   project evidence verify-proof verify one proof against bundle content and root
   project chain deploy deploy the registry and validate the frozen M6 proof on Anvil
+  project chain rehearse repeat the deployment/proof demo without changing frozen evidence
   project replay <bundle> deterministically replay M8 and run the mutation/QA gates
   project mutate-test <bundle> run deterministic single-byte bundle mutations
   project version   print the CLI version

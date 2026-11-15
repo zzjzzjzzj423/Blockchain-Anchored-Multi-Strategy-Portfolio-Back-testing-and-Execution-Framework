@@ -9,7 +9,7 @@ GO_ENV := GOCACHE=$(CURDIR)/.cache/go-build GOMODCACHE=$(CURDIR)/.cache/go-mod G
 FOUNDRY_BIN := $(CURDIR)/.tools/foundry-v1.9.0/bin
 FOUNDRY_ENV := FOUNDRY_DIR=$(CURDIR)/.cache/foundry SVM_HOME=$(CURDIR)/.cache/svm PATH=$(FOUNDRY_BIN):$$PATH
 
-.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 clean
+.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 report deliverables demo m9 clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -33,6 +33,10 @@ help:
 	@echo "  make replay     run 10 clean M8 replays and all QA gates"
 	@echo "  make mutation   rerun the seed-5017 100-byte mutation suite"
 	@echo "  make m8         run the complete M8 replay and QA acceptance gate"
+	@echo "  make report     regenerate traceable final SVG figures"
+	@echo "  make deliverables regenerate the D1-D3 SHA-256 manifest"
+	@echo "  make demo       run the read-only end-to-end demonstration rehearsal"
+	@echo "  make m9         regenerate final deliverables and run the demonstration"
 
 bootstrap:
 	@./scripts/bootstrap-go.sh
@@ -113,6 +117,17 @@ mutation:
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project mutate-test --count 100 --seed 5017 artifacts/098376de7f855b9e
 
 m8: ci contract-test replay
+
+report:
+	@python3 ./scripts/generate-report-charts.py
+
+deliverables:
+	@python3 ./scripts/build-deliverables.py
+
+demo:
+	@./scripts/demo.sh
+
+m9: report deliverables demo
 
 clean:
 	@rm -rf "$(BIN_DIR)"

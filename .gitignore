@@ -3,6 +3,8 @@
 .idea/
 .vscode/
 *.swp
+__pycache__/
+*.pyc
 
 # Local toolchains and build outputs
 /.tools/
