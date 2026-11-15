@@ -7,7 +7,7 @@
 | 计划版本 | 1.0.0 |
 | 日期 | 2026-11-14 |
 | 规格基线 | `SPEC.md` 1.0.0-frozen |
-| 当前状态 | M0-M6 已完成；10/10 root 一致且 568/568 proofs 通过；M7 尚未开始 |
+| 当前状态 | M0-M7 已完成；冻结 root 已提交本地 EVM，真实 10 层 proof 链上验证通过；下一阶段 M8 |
 | 预计净工作量 | 18-25 个开发日，不含课程报告反复修改时间 |
 
 本计划负责回答“按什么顺序完成项目”。所有技术规则以 `SPEC.md` 为准；PLAN 不得静默修改 SPEC。遇到必须改变数据、时间切分、指标、成本或 Merkle 规则的情况，应先提升 SPEC 版本，再更新本计划。
@@ -423,7 +423,7 @@ MSBD_BC/
 
 ## M7：Solidity Registry 和链上 proof
 
-预计：2-2.5 天。依赖 M6，可与 M8 部分并行。
+状态：**已完成（2026-11-15）**。依赖 M6，可与 M8 部分并行。
 
 ### 任务
 
@@ -460,6 +460,15 @@ MSBD_BC/
 - Foundry tests 全部通过；
 - final root 可从 registry 查询；
 - 至少一个真实 proof 链上验证成功。
+
+### 完成记录
+
+- Foundry tests：5/5 通过，fuzz 512 runs；Registry 本体四类覆盖率均为 100%；
+- Anvil chain ID：31337；合约地址：`0x5fbdb2315678afecb367f032d93f642f64180aa3`；
+- 提交 M6 root `05136f84...defa532`，event 与 public record 完全一致；
+- `results/trades.csv` 的 depth-10 proof 离线和链上均通过；三类单点篡改及长度错误全部失败；
+- submission gas 为 69,175；proof depth 1/5/10 的 estimate 分别为 27,302/33,605/41,473；
+- chain artifacts 不进入 M6 tree，重新验证仍得到 568 leaves 和同一冻结 root。
 
 ---
 

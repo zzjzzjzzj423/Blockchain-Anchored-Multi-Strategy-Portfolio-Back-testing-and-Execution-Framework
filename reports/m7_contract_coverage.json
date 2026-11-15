@@ -1,0 +1,1 @@
+{"backtest_registry":{"branches":{"covered":6,"percent":100,"total":6},"functions":{"covered":2,"percent":100,"total":2},"lines":{"covered":14,"percent":100,"total":14},"statements":{"covered":18,"percent":100,"total":18}},"foundry_version":"1.9.0","fuzz_runs":512,"schema_version":"1.0.0","solidity_version":"0.8.28","test_result":{"failed":0,"passed":5,"skipped":0}}

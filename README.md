@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0-M6 已完成**。2025 final holdout 已按冻结参数正式运行一次，结果没有反馈到参数选择；canonical evidence bundle、SHA-256 Merkle root 和全部 inclusion proofs 已生成并验证。下一阶段是 M7 Solidity Registry 与链上 proof。
+当前状态：**M0-M7 已完成**。2025 final holdout 已按冻结参数正式运行一次，canonical evidence bundle、SHA-256 Merkle root 和全部 inclusion proofs 已生成并验证；冻结 root 已提交到本地 EVM Registry，一个真实 artifact proof 已完成链上验证。下一阶段是 M8 replay、mutation 和质量保证。
 
 ## 规格与计划
 
@@ -48,11 +48,12 @@ project data validate   从本地 raw snapshot 重跑全部数据校验
 project execution validate  运行 M2 手工会计场景并生成确定性报告
 project strategies validate 运行 M3 三策略、无前视和串并行一致性验收
 project experiment select 运行 M4 Walk-forward 搜索并冻结参数
+project evidence build 构建 canonical bundle、Merkle root 和全部 proofs
+project evidence verify 独立验证 bundle 和全部 proofs
+project chain deploy 在本地 Anvil 部署 Registry 并运行 M7 链上验收
 project help     显示帮助
 project version  显示程序版本
 ```
-
-其余策略、证据和链上命令将在对应里程碑中实现，当前不会放置返回假成功的占位命令。
 
 ## M1 固定数据快照
 
@@ -218,6 +219,46 @@ M6 报告：
 - [`reports/m6_evidence_bundle.json`](reports/m6_evidence_bundle.json)：run ID、root、568 个 leaves 与 10 次重建结果；
 - [`reports/m6_coverage_gap.json`](reports/m6_coverage_gap.json)：canonical/Merkle 覆盖率及 evidence orchestration 差距；
 - `artifacts/098376de7f855b9e/`：完整 bundle、Merkle manifest 和 568 个 proofs，默认不提交。
+
+## M7 Solidity Registry 与链上 proof
+
+固定 Foundry v1.9.0 工具链并运行合约测试：
+
+```bash
+make foundry-bootstrap
+make contract-test
+make contract-coverage
+```
+
+正式本地链验收必须从 clean commit 启动：
+
+```bash
+make m7
+```
+
+该命令启动 chain ID 31337 的确定性 Anvil，部署 `BacktestRegistry`，提交 M6 root，然后用 `results/trades.csv` 的真实 10 层 proof 调用 `verifyStoredProof`。同时验证 zero/duplicate root rejection、event/storage 一致性、proof 长度门禁，以及 leaf、sibling、方向位三种篡改。
+
+冻结结果：
+
+```text
+source commit:       6b2ad42e041bd60d932d77007a8963e4f263bc23
+contract:            0x5fbdb2315678afecb367f032d93f642f64180aa3
+root submission tx:  0x0ee983ca441892a46e784748d226553d4aaff20adf6cc44dacc92a1973324161
+submission gas:      69,175
+proof gas depth 1:   27,302
+proof gas depth 5:   33,605
+proof gas depth 10:  41,473
+```
+
+Foundry 5/5 测试通过，每个 fuzz test 固定运行 512 次；`BacktestRegistry.sol` 的 line、statement、branch 和 function coverage 均为 100%。链上产物写入 `artifacts/098376de7f855b9e/chain/`，按 SPEC 明确排除在 M6 Merkle tree 外，因此不会形成循环承诺，也不会改变已冻结 root。
+
+主要证据：
+
+- [`contracts/src/BacktestRegistry.sol`](contracts/src/BacktestRegistry.sol)：root registry 和有序 SHA-256 proof verifier；
+- [`contracts/test/BacktestRegistry.t.sol`](contracts/test/BacktestRegistry.t.sol)：单元、负例和 fuzz tests；
+- [`reports/m7_chain_validation.json`](reports/m7_chain_validation.json)：部署、提交、proof 和篡改门禁结果；
+- [`reports/m7_contract_coverage.json`](reports/m7_contract_coverage.json)：合约本体覆盖率；
+- `artifacts/098376de7f855b9e/chain/`：deployment、receipt、gas 和 proof verification 产物，默认不提交。
 
 ## 目录
 
