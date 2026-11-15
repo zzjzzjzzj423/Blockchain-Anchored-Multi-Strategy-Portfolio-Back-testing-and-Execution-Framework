@@ -15,9 +15,10 @@ import (
 	"msbd5017/portfolio-proof/internal/evidence"
 	"msbd5017/portfolio-proof/internal/execution"
 	"msbd5017/portfolio-proof/internal/experiment"
+	projectreplay "msbd5017/portfolio-proof/internal/replay"
 )
 
-const version = "0.8.0-m7"
+const version = "0.9.0-m8"
 
 func main() {
 	os.Exit(run(context.Background(), os.Args[1:]))
@@ -49,6 +50,10 @@ func run(ctx context.Context, args []string) int {
 		return runEvidence(ctx, args[1:])
 	case "chain":
 		return runChain(ctx, args[1:])
+	case "replay":
+		return runReplay(ctx, args[1:])
+	case "mutate-test":
+		return runMutation(args[1:])
 	case "help", "-h", "--help":
 		printUsage()
 		return 0
@@ -60,6 +65,64 @@ func run(ctx context.Context, args []string) int {
 		printUsage()
 		return 2
 	}
+}
+
+func runReplay(ctx context.Context, args []string) int {
+	flags := flag.NewFlagSet("project replay", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	root := flags.String("root", ".", "repository root")
+	replays := flags.Int("replays", 10, "clean replay count")
+	mutations := flags.Int("mutations", 100, "single-byte mutation count")
+	seed := flags.Int64("seed", 5017, "mutation seed")
+	if err := flags.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid replay options: %v\n", err)
+		return 2
+	}
+	if flags.NArg() != 1 {
+		fmt.Fprintln(os.Stderr, "replay requires a bundle path")
+		return 2
+	}
+	bundle := flags.Arg(0)
+	if !filepath.IsAbs(bundle) {
+		bundle = filepath.Join(*root, bundle)
+	}
+	result, err := projectreplay.RunM8(ctx, *root, bundle, *replays, *mutations, *seed)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "M8 replay failed: %v\n", err)
+		return 1
+	}
+	fmt.Printf("M8 passed: replay=%d/%d roots=%d/%d mutations=%d/%d localized=%d/%d\n",
+		result.Replay.ArtifactIdenticalRuns, result.Replay.ReplayCount, result.Replay.RootIdenticalRuns, result.Replay.ReplayCount,
+		result.Mutation.Detected, result.Mutation.Count, result.Mutation.Localized, result.Mutation.Count)
+	return 0
+}
+
+func runMutation(args []string) int {
+	flags := flag.NewFlagSet("project mutate-test", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	count := flags.Int("count", 100, "single-byte mutation count")
+	seed := flags.Int64("seed", 5017, "mutation seed")
+	if err := flags.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid mutation options: %v\n", err)
+		return 2
+	}
+	if flags.NArg() != 1 {
+		fmt.Fprintln(os.Stderr, "mutate-test requires a bundle path")
+		return 2
+	}
+	bundle := flags.Arg(0)
+	files, err := evidence.ReadLeafFiles(bundle)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read bundle: %v\n", err)
+		return 1
+	}
+	report, err := projectreplay.RunMutations(bundle, files, *count, *seed)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "mutation test failed: %v\n", err)
+		return 1
+	}
+	fmt.Printf("mutations passed: detected=%d/%d localized=%d/%d seed=%d\n", report.Detected, report.Count, report.Localized, report.Count, report.Seed)
+	return 0
 }
 
 func runChain(ctx context.Context, args []string) int {
@@ -351,6 +414,8 @@ func printUsage() {
   project evidence prove locate a leaf inclusion proof
   project evidence verify-proof verify one proof against bundle content and root
   project chain deploy deploy the registry and validate the frozen M6 proof on Anvil
+  project replay <bundle> deterministically replay M8 and run the mutation/QA gates
+  project mutate-test <bundle> run deterministic single-byte bundle mutations
   project version   print the CLI version
   project help      show this help
 `)

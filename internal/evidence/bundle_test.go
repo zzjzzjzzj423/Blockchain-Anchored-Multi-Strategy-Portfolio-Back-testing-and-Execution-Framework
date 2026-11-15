@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,6 +32,11 @@ func TestBundleVerifierChecksAllProofsAndDetectsTamper(t *testing.T) {
 	}
 	if _, err := VerifyBundle(directory); err == nil {
 		t.Fatal("tampered bundle verified")
+	} else {
+		var integrity *IntegrityError
+		if !errors.As(err, &integrity) || integrity.Path != "results/trades.csv" {
+			t.Fatalf("tamper was not localized: %v", err)
+		}
 	}
 }
 

@@ -184,6 +184,80 @@ func RunM5Formal(ctx context.Context, root string) (M5Report, error) {
 	return report, nil
 }
 
+// ReplayFinalArtifacts deterministically recomputes every final-holdout artifact
+// used by the evidence bundle. It has no report-writing, Git, network, or agent side effects.
+func ReplayFinalArtifacts(ctx context.Context, root string) (map[string][]byte, error) {
+	config, err := LoadFinalExperimentConfig(root)
+	if err != nil {
+		return nil, err
+	}
+	if err := verifyFinalConfig(root, config); err != nil {
+		return nil, err
+	}
+	threshold, err := strconv.ParseFloat(config.DevelopmentVolatilityThreshold, 64)
+	if err != nil {
+		return nil, err
+	}
+	commission, err := strconv.ParseFloat(config.BaselineCommissionRate, 64)
+	if err != nil {
+		return nil, err
+	}
+	slippage, err := strconv.ParseFloat(config.BaselineSlippageRate, 64)
+	if err != nil {
+		return nil, err
+	}
+	selected, selectedID, opened, err := loadSelectedCandidate(root)
+	if err != nil || opened || selectedID != config.SelectedCandidateID {
+		return nil, fmt.Errorf("selected parameters do not match frozen final config")
+	}
+	bars, err := projectdata.LoadFullSnapshot(root)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateFullCoverage(bars); err != nil {
+		return nil, err
+	}
+	base, ensemble, err := runFinalCandidate(ctx, bars, selected, commission, slippage)
+	if err != nil {
+		return nil, err
+	}
+	overall, summaries, err := overallMetricsDocument(base, ensemble.Result)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateFinalSummaries(summaries); err != nil {
+		return nil, err
+	}
+	labels, err := ClassifyRegimes(bars, projectdata.FinalHoldoutStart, projectdata.FinalHoldoutEnd, threshold)
+	if err != nil {
+		return nil, err
+	}
+	regimes, err := regimeMetricsDocument(base, ensemble.Result, labels)
+	if err != nil {
+		return nil, err
+	}
+	sensitivity, _, err := runSensitivity(ctx, bars, selected, summaries)
+	if err != nil {
+		return nil, err
+	}
+	artifacts, err := finalArtifactBytes(base, ensemble, labels)
+	if err != nil {
+		return nil, err
+	}
+	artifacts["overall_metrics.json"], err = canonical.JSON(map[string]any{
+		"final_end": config.FinalEnd, "final_start": config.FinalStart, "metrics": overall, "schema_version": "1.0.0",
+	})
+	if err != nil {
+		return nil, err
+	}
+	artifacts["regime_metrics.json"], err = canonical.JSON(regimes)
+	if err != nil {
+		return nil, err
+	}
+	artifacts["sensitivity.json"], err = canonical.JSON(sensitivity)
+	return artifacts, err
+}
+
 func runFinalCandidate(ctx context.Context, bars []domain.MarketBar, candidate Candidate, commission, slippage float64) (Result, EnsembleRun, error) {
 	factories, err := factoriesFor(candidate)
 	if err != nil {

@@ -23,6 +23,16 @@ type VerifyReport struct {
 	Status        string `json:"status"`
 }
 
+// IntegrityError identifies the first bundle leaf whose bytes disagree with the manifest.
+type IntegrityError struct {
+	Path   string
+	Reason string
+}
+
+func (e *IntegrityError) Error() string {
+	return fmt.Sprintf("integrity failure at %s: %s", e.Path, e.Reason)
+}
+
 func writeBundle(bundlePath string, files map[string][]byte, tree *merkle.Tree) error {
 	if err := os.MkdirAll(bundlePath, 0o755); err != nil {
 		return err
@@ -72,6 +82,21 @@ func writeBundle(bundlePath string, files map[string][]byte, tree *merkle.Tree) 
 }
 
 func VerifyBundle(bundlePath string) (VerifyReport, error) {
+	files, err := ReadLeafFiles(bundlePath)
+	if err != nil {
+		return VerifyReport{}, err
+	}
+	return VerifyLeafFiles(bundlePath, files)
+}
+
+// ReadLeafFiles reads exactly the paths governed by the Merkle leaf policy.
+func ReadLeafFiles(bundlePath string) (map[string][]byte, error) {
+	return scanLeafFiles(bundlePath)
+}
+
+// VerifyLeafFiles verifies an in-memory leaf set against a bundle's immutable
+// manifest and proofs. It is used by mutation tests without copying the bundle.
+func VerifyLeafFiles(bundlePath string, files map[string][]byte) (VerifyReport, error) {
 	manifestContent, err := os.ReadFile(filepath.Join(bundlePath, "merkle", "merkle_manifest.json"))
 	if err != nil {
 		return VerifyReport{}, err
@@ -89,10 +114,6 @@ func VerifyBundle(bundlePath string) (VerifyReport, error) {
 	if err != nil {
 		return VerifyReport{}, err
 	}
-	files, err := scanLeafFiles(bundlePath)
-	if err != nil {
-		return VerifyReport{}, err
-	}
 	if err := validateLeafPolicy(files); err != nil {
 		return VerifyReport{}, err
 	}
@@ -100,13 +121,16 @@ func VerifyBundle(bundlePath string) (VerifyReport, error) {
 	if err != nil {
 		return VerifyReport{}, err
 	}
-	if tree.Root() != root || len(tree.Leaves) != manifest.LeafCount || len(manifest.Leaves) != manifest.LeafCount {
+	if len(tree.Leaves) != manifest.LeafCount || len(manifest.Leaves) != manifest.LeafCount {
 		return VerifyReport{}, fmt.Errorf("bundle root or leaf count mismatch")
 	}
 	for index, record := range manifest.Leaves {
 		leaf := tree.Leaves[index]
-		if record.Index != index || record.Path != leaf.Path || record.ContentLength != len(leaf.Content) || record.ContentSHA256 != hex.EncodeToString(leaf.ContentHash[:]) || record.LeafHash != hex.EncodeToString(leaf.Hash[:]) {
-			return VerifyReport{}, fmt.Errorf("leaf manifest mismatch at index %d", index)
+		if record.Index != index || record.Path != leaf.Path {
+			return VerifyReport{}, &IntegrityError{Path: leaf.Path, Reason: "path or index mismatch"}
+		}
+		if record.ContentLength != len(leaf.Content) || record.ContentSHA256 != hex.EncodeToString(leaf.ContentHash[:]) || record.LeafHash != hex.EncodeToString(leaf.Hash[:]) {
+			return VerifyReport{}, &IntegrityError{Path: leaf.Path, Reason: "content bytes do not match leaf manifest"}
 		}
 		proofPath := filepath.Join(bundlePath, filepath.FromSlash(record.ProofPath))
 		proof, err := LoadProof(proofPath)
@@ -116,6 +140,9 @@ func VerifyBundle(bundlePath string) (VerifyReport, error) {
 		if err := merkle.VerifyProof(leaf.Content, proof, root); err != nil {
 			return VerifyReport{}, fmt.Errorf("proof %s: %w", record.ProofPath, err)
 		}
+	}
+	if tree.Root() != root {
+		return VerifyReport{}, fmt.Errorf("bundle root mismatch")
 	}
 	runID, err := bundleRunID(files["run_manifest.json"])
 	if err != nil {
@@ -129,6 +156,24 @@ func VerifyBundle(bundlePath string) (VerifyReport, error) {
 		return VerifyReport{}, fmt.Errorf("run ID does not match canonical identity inputs")
 	}
 	return VerifyReport{LeafCount: len(tree.Leaves), MerkleRoot: manifest.Root, ProofsValid: len(tree.Leaves), RunID: runID, SchemaVersion: SchemaVersion, Status: "passed"}, nil
+}
+
+// RegenerateDerivedFiles replaces the deterministic log and run manifest after
+// result artifacts have been replayed.
+func RegenerateDerivedFiles(files map[string][]byte, runID, sourceCommit string) error {
+	delete(files, "logs/deterministic_events.jsonl")
+	delete(files, "run_manifest.json")
+	events, err := deterministicEvents(files)
+	if err != nil {
+		return err
+	}
+	files["logs/deterministic_events.jsonl"] = events
+	manifest, err := runManifest(runID, sourceCommit, files)
+	if err != nil {
+		return err
+	}
+	files["run_manifest.json"] = manifest
+	return nil
 }
 
 func validateLeafPolicy(files map[string][]byte) error {

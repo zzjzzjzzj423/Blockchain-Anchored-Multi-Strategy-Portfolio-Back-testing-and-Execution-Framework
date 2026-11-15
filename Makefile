@@ -9,7 +9,7 @@ GO_ENV := GOCACHE=$(CURDIR)/.cache/go-build GOMODCACHE=$(CURDIR)/.cache/go-mod G
 FOUNDRY_BIN := $(CURDIR)/.tools/foundry-v1.9.0/bin
 FOUNDRY_ENV := FOUNDRY_DIR=$(CURDIR)/.cache/foundry SVM_HOME=$(CURDIR)/.cache/svm PATH=$(FOUNDRY_BIN):$$PATH
 
-.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 m5-freeze m5 m6 contract-test contract-coverage m7 clean
+.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -30,6 +30,9 @@ help:
 	@echo "  make contract-test run the pinned Foundry contract suite and gas report"
 	@echo "  make contract-coverage report Solidity line, branch, and function coverage"
 	@echo "  make m7         deploy to deterministic Anvil and verify the frozen M6 proof"
+	@echo "  make replay     run 10 clean M8 replays and all QA gates"
+	@echo "  make mutation   rerun the seed-5017 100-byte mutation suite"
+	@echo "  make m8         run the complete M8 replay and QA acceptance gate"
 
 bootstrap:
 	@./scripts/bootstrap-go.sh
@@ -102,6 +105,14 @@ contract-coverage: foundry-bootstrap
 
 m7: contract-test
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project chain deploy --root .
+
+replay:
+	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project replay --root . --replays 10 --mutations 100 --seed 5017 artifacts/098376de7f855b9e
+
+mutation:
+	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project mutate-test --count 100 --seed 5017 artifacts/098376de7f855b9e
+
+m8: replay
 
 clean:
 	@rm -rf "$(BIN_DIR)"
