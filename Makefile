@@ -6,8 +6,10 @@ GO := $(if $(wildcard $(LOCAL_GO)),$(LOCAL_GO),go)
 GOFMT := $(dir $(GO))gofmt
 BIN_DIR := $(CURDIR)/bin
 GO_ENV := GOCACHE=$(CURDIR)/.cache/go-build GOMODCACHE=$(CURDIR)/.cache/go-mod GOTELEMETRY=off GOTOOLCHAIN=local
+FOUNDRY_BIN := $(CURDIR)/.tools/foundry-v1.9.0/bin
+FOUNDRY_ENV := FOUNDRY_DIR=$(CURDIR)/.cache/foundry SVM_HOME=$(CURDIR)/.cache/svm PATH=$(FOUNDRY_BIN):$$PATH
 
-.PHONY: help bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 m5-freeze m5 m6 clean
+.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 m5-freeze m5 m6 contract-test contract-coverage m7 clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -25,12 +27,18 @@ help:
 	@echo "  make m5-freeze  freeze the development-only regime threshold"
 	@echo "  make m5         run the one-time formal 2025 final holdout"
 	@echo "  make m6         build and verify the canonical evidence bundle 10 times"
+	@echo "  make contract-test run the pinned Foundry contract suite and gas report"
+	@echo "  make contract-coverage report Solidity line, branch, and function coverage"
+	@echo "  make m7         deploy to deterministic Anvil and verify the frozen M6 proof"
 
 bootstrap:
 	@./scripts/bootstrap-go.sh
 
+foundry-bootstrap:
+	@./scripts/bootstrap-foundry.sh
+
 doctor:
-	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project doctor
+	@PATH="$(CURDIR)/.tools/go/bin:$(FOUNDRY_BIN):$$PATH" $(GO_ENV) $(GO) run ./cmd/project doctor
 
 build:
 	@mkdir -p "$(BIN_DIR)"
@@ -84,6 +92,16 @@ m5:
 
 m6: wasm
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project evidence build --rebuilds 10
+
+contract-test: foundry-bootstrap
+	@$(FOUNDRY_ENV) forge fmt --root contracts --check
+	@$(FOUNDRY_ENV) forge test --root contracts --gas-report
+
+contract-coverage: foundry-bootstrap
+	@$(FOUNDRY_ENV) forge coverage --root contracts --report summary
+
+m7: contract-test
+	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project chain deploy --root .
 
 clean:
 	@rm -rf "$(BIN_DIR)"

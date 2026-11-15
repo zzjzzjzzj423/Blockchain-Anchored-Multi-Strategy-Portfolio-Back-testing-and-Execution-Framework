@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"msbd5017/portfolio-proof/internal/canonical"
+	"msbd5017/portfolio-proof/internal/chain"
 	projectdata "msbd5017/portfolio-proof/internal/data"
 	"msbd5017/portfolio-proof/internal/doctor"
 	"msbd5017/portfolio-proof/internal/evidence"
@@ -16,7 +17,7 @@ import (
 	"msbd5017/portfolio-proof/internal/experiment"
 )
 
-const version = "0.7.0-m6"
+const version = "0.8.0-m7"
 
 func main() {
 	os.Exit(run(context.Background(), os.Args[1:]))
@@ -46,6 +47,8 @@ func run(ctx context.Context, args []string) int {
 		return runExperiment(ctx, args[1:])
 	case "evidence":
 		return runEvidence(ctx, args[1:])
+	case "chain":
+		return runChain(ctx, args[1:])
 	case "help", "-h", "--help":
 		printUsage()
 		return 0
@@ -57,6 +60,27 @@ func run(ctx context.Context, args []string) int {
 		printUsage()
 		return 2
 	}
+}
+
+func runChain(ctx context.Context, args []string) int {
+	if len(args) == 0 || args[0] != "deploy" {
+		fmt.Fprintln(os.Stderr, "chain command requires: deploy")
+		return 2
+	}
+	flags := flag.NewFlagSet("project chain deploy", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	root := flags.String("root", ".", "repository root")
+	if err := flags.Parse(args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid chain options: %v\n", err)
+		return 2
+	}
+	report, err := chain.RunM7(ctx, *root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "M7 chain validation failed: %v\n", err)
+		return 1
+	}
+	fmt.Printf("M7 chain validation passed: contract=%s root=%s proof_depth=%d tx=%s\n", report.ContractAddress, report.MerkleRoot, report.ProofDepth, report.SubmissionTransaction)
+	return 0
 }
 
 func runEvidence(ctx context.Context, args []string) int {
@@ -326,6 +350,7 @@ func printUsage() {
   project evidence verify verify a complete bundle and every inclusion proof
   project evidence prove locate a leaf inclusion proof
   project evidence verify-proof verify one proof against bundle content and root
+  project chain deploy deploy the registry and validate the frozen M6 proof on Anvil
   project version   print the CLI version
   project help      show this help
 `)
