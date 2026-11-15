@@ -7,7 +7,7 @@
 | 计划版本 | 1.0.0 |
 | 日期 | 2026-11-14 |
 | 规格基线 | `SPEC.md` 1.0.0-frozen |
-| 当前状态 | M0-M8 已完成；10/10 clean replay 与 100/100 mutation 门禁通过；下一阶段 M9 |
+| 当前状态 | M0-M9 全部完成；技术报告、可追溯图表、D1-D3 和隔离 rehearsal 均通过 |
 | 预计净工作量 | 18-25 个开发日，不含课程报告反复修改时间 |
 
 本计划负责回答“按什么顺序完成项目”。所有技术规则以 `SPEC.md` 为准；PLAN 不得静默修改 SPEC。遇到必须改变数据、时间切分、指标、成本或 Merkle 规则的情况，应先提升 SPEC 版本，再更新本计划。
@@ -522,7 +522,7 @@ MSBD_BC/
 
 ## M9：技术报告和演示
 
-预计：2-3 天。依赖 M7、M8。
+状态：**已完成（2026-11-15）**。依赖 M7、M8。
 
 ### 任务
 
@@ -554,6 +554,15 @@ MSBD_BC/
 - D1、D2、D3 文件齐全；
 - 所有表格和图可以追溯到 evidence bundle；
 - 报告不声称区块链证明数据真实或策略盈利。
+
+### 完成记录
+
+- 完成英文技术报告，覆盖研究问题、walk-forward 选择、final 结果、regime/sensitivity、Merkle/EVM、QA 与局限；
+- 生成 equity、drawdown、ensemble weights、cost drag、regime Sharpe 五张 SVG；图与五个 bundle 源文件均有 SHA-256 manifest；
+- `make demo` 依次完成环境检查、180 文件数据校验、冻结结果展示、568/568 proofs、真实 trades proof、fresh Anvil 链上 proof、100/100 mutation 和 replay/overhead 展示；
+- 在临时 detached checkout 上重复演示，使用固定输入和 pinned toolchains，tracked source 运行后无差异；
+- D1 10 项、D2 7 项、D3 16 项代表性交付均存在并记录 byte length 与 SHA-256；
+- 报告明确声明：链上 root 不证明源数据真实、策略有效或未来盈利；local EVM 不代表 public-chain finality。
 
 ---
 

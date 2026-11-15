@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0-M8 已完成**。2025 final holdout、canonical evidence、Merkle proofs、本地 EVM 锚定和 deterministic replay 均已通过冻结门禁；10/10 clean replay 字节一致，seed 5017 的 100/100 单字节 mutation 均被检测并定位。下一阶段是 M9 技术报告和演示。
+当前状态：**M0-M9 全部完成**。2025 final holdout、canonical evidence、Merkle proofs、本地 EVM 锚定和 deterministic replay 均已通过冻结门禁；10/10 clean replay 字节一致，seed 5017 的 100/100 单字节 mutation 均被检测并定位。技术报告、五张可追溯图、D1-D3 清单和隔离 checkout rehearsal 已完成。
 
 ## 规格与计划
 
@@ -297,6 +297,34 @@ bundle storage total:      8,625,007 bytes
 - [`reports/m8_mutation.json`](reports/m8_mutation.json)：100 次修改位置、原/新字节和定位结果；
 - [`reports/m8_coverage.json`](reports/m8_coverage.json)：逐包核心覆盖率；
 - [`reports/m8_overhead.json`](reports/m8_overhead.json)：回测、证据开销及 bundle 存储分解。
+
+## M9 最终报告与演示
+
+重新生成图表和交付清单：
+
+```bash
+make report
+make deliverables
+```
+
+运行完整演示：
+
+```bash
+make demo
+```
+
+`make demo` 会验证固定数据、展示 final holdout、验证全部 568 个 leaves/proofs、验证真实 trades proof、启动全新 Anvil 完成部署和链上 proof，并运行 100 次 mutation。Rehearsal 使用临时 detached checkout 执行，tracked source 在运行后保持 clean。
+
+最终文件：
+
+- [`docs/TECHNICAL_REPORT.md`](docs/TECHNICAL_REPORT.md)：研究问题、方法、结果、验证和局限；
+- [`docs/DEMO.md`](docs/DEMO.md)：九步端到端演示说明；
+- [`docs/figures/`](docs/figures/)：equity、drawdown、weights、cost drag 和 regime 图；
+- [`reports/m9_chart_manifest.json`](reports/m9_chart_manifest.json)：每张图及其 bundle 数据源的 SHA-256；
+- [`deliverables/manifest.json`](deliverables/manifest.json)：D1、D2、D3 代表文件的 byte length 和 SHA-256；
+- [`reports/m9_rehearsal.json`](reports/m9_rehearsal.json)：隔离 checkout 最终演示门禁。
+
+报告明确限制结论：区块链只证明特定 bytes 的承诺、提交者和顺序，不证明数据真实，也不证明策略未来盈利。
 
 ## 目录
 
