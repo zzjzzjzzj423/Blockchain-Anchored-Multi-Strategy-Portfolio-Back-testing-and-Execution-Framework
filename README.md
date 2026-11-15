@@ -2,7 +2,7 @@
 
 MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系统，并用 SHA-256 Merkle root 和本地 EVM registry 对实验结果进行可验证锚定。
 
-当前状态：**M0-M7 已完成**。2025 final holdout 已按冻结参数正式运行一次，canonical evidence bundle、SHA-256 Merkle root 和全部 inclusion proofs 已生成并验证；冻结 root 已提交到本地 EVM Registry，一个真实 artifact proof 已完成链上验证。下一阶段是 M8 replay、mutation 和质量保证。
+当前状态：**M0-M8 已完成**。2025 final holdout、canonical evidence、Merkle proofs、本地 EVM 锚定和 deterministic replay 均已通过冻结门禁；10/10 clean replay 字节一致，seed 5017 的 100/100 单字节 mutation 均被检测并定位。下一阶段是 M9 技术报告和演示。
 
 ## 规格与计划
 
@@ -51,6 +51,8 @@ project experiment select 运行 M4 Walk-forward 搜索并冻结参数
 project evidence build 构建 canonical bundle、Merkle root 和全部 proofs
 project evidence verify 独立验证 bundle 和全部 proofs
 project chain deploy 在本地 Anvil 部署 Registry 并运行 M7 链上验收
+project replay <bundle> 执行 10 次完整重放、mutation、覆盖率与开销门禁
+project mutate-test <bundle> 独立运行 seed 固定的单字节 mutation 测试
 project help     显示帮助
 project version  显示程序版本
 ```
@@ -259,6 +261,42 @@ Foundry 5/5 测试通过，每个 fuzz test 固定运行 512 次；`BacktestRegi
 - [`reports/m7_chain_validation.json`](reports/m7_chain_validation.json)：部署、提交、proof 和篡改门禁结果；
 - [`reports/m7_contract_coverage.json`](reports/m7_contract_coverage.json)：合约本体覆盖率；
 - `artifacts/098376de7f855b9e/chain/`：deployment、receipt、gas 和 proof verification 产物，默认不提交。
+
+## M8 Replay、mutation 与质量保证
+
+正式 M8 必须在 clean commit 上运行：
+
+```bash
+make m8
+```
+
+Replay 从 bundle 提取并校验冻结输入，在新的临时工作区重新运行三个基础策略、Ensemble、会计、指标和 19 个敏感性场景，然后重新生成 canonical results、deterministic event log、run manifest 和 Merkle tree。它不会下载数据，也不会调用代理。若不一致，verifier 会报告按路径排序的首个不同文件和首个 byte offset。
+
+冻结结果：
+
+```text
+clean replay:              10/10 artifacts byte-identical
+Merkle root:               10/10 identical
+mutation seed/count:       5017 / 100
+mutation detected:         100/100
+mutated file localized:    100/100
+network/agent calls:       0 / 0
+core coverage minimum:     85.0%
+average backtest:          1.164137 s
+average evidence work:     0.083600 s
+evidence overhead:         7.181285%
+bundle storage total:      8,625,007 bytes
+```
+
+核心覆盖率门禁涵盖 canonical serialization、会计、Merkle、指标、组合、策略接口和三种策略实现；各包均不低于 85%。filesystem/report orchestration 由真实 bundle 的 10 次端到端 replay 和 100 次 mutation integration gate 覆盖。
+
+主要证据：
+
+- [`internal/replay/replay.go`](internal/replay/replay.go)：隔离式重放、byte diff、mutation 和 QA 编排；
+- [`reports/m8_replay.json`](reports/m8_replay.json)：10 次逐次 root、字节一致性和耗时；
+- [`reports/m8_mutation.json`](reports/m8_mutation.json)：100 次修改位置、原/新字节和定位结果；
+- [`reports/m8_coverage.json`](reports/m8_coverage.json)：逐包核心覆盖率；
+- [`reports/m8_overhead.json`](reports/m8_overhead.json)：回测、证据开销及 bundle 存储分解。
 
 ## 目录
 

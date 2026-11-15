@@ -7,7 +7,7 @@
 | 计划版本 | 1.0.0 |
 | 日期 | 2026-11-14 |
 | 规格基线 | `SPEC.md` 1.0.0-frozen |
-| 当前状态 | M0-M7 已完成；冻结 root 已提交本地 EVM，真实 10 层 proof 链上验证通过；下一阶段 M8 |
+| 当前状态 | M0-M8 已完成；10/10 clean replay 与 100/100 mutation 门禁通过；下一阶段 M9 |
 | 预计净工作量 | 18-25 个开发日，不含课程报告反复修改时间 |
 
 本计划负责回答“按什么顺序完成项目”。所有技术规则以 `SPEC.md` 为准；PLAN 不得静默修改 SPEC。遇到必须改变数据、时间切分、指标、成本或 Merkle 规则的情况，应先提升 SPEC 版本，再更新本计划。
@@ -474,7 +474,7 @@ MSBD_BC/
 
 ## M8：Replay、mutation 和质量保证
 
-预计：2-3 天。依赖 M6，可与 M7 部分并行。
+状态：**已完成（2026-11-15）**。依赖 M6，可与 M7 部分并行。
 
 ### 任务
 
@@ -507,6 +507,16 @@ MSBD_BC/
 - 达到 proposal 中全部量化 QA 指标；
 - 无未解释的 nondeterminism；
 - 核心测试覆盖率 `>=85%`。
+
+### 完成记录
+
+- 从 clean commit `f5a13bf` 执行 10 个隔离临时工作区重放，568 个 canonical artifacts 每次均逐字节一致；
+- 10/10 root 均为 `05136f84d6b1faa9226fd7b1a58b691707dc90be18688a2485fcbc3b7defa532`；
+- replay 网络调用和代理调用均为 0，source identity 和 Go toolchain 校验通过；
+- seed 5017 的 100 次单字节 mutation 全部检测，100 次均定位到实际修改文件；测试后原 bundle 仍验证通过；
+- 核心九包覆盖率最低为 85.0%，满足 proposal 门槛；
+- 平均普通回测 1.164137 秒，证据重建 0.083600 秒，相对开销 7.181285%；bundle 总存储 8,625,007 bytes；
+- replay、mutation、coverage、overhead 四份报告均已生成，无未解释的 nondeterminism。
 
 ---
 

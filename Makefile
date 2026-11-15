@@ -112,7 +112,7 @@ replay:
 mutation:
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project mutate-test --count 100 --seed 5017 artifacts/098376de7f855b9e
 
-m8: replay
+m8: ci contract-test replay
 
 clean:
 	@rm -rf "$(BIN_DIR)"
