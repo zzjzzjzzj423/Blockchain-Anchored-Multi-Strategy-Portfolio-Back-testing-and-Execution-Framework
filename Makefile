@@ -9,7 +9,7 @@ GO_ENV := GOCACHE=$(CURDIR)/.cache/go-build GOMODCACHE=$(CURDIR)/.cache/go-mod G
 FOUNDRY_BIN := $(CURDIR)/.tools/foundry-v1.9.0/bin
 FOUNDRY_ENV := FOUNDRY_DIR=$(CURDIR)/.cache/foundry SVM_HOME=$(CURDIR)/.cache/svm PATH=$(FOUNDRY_BIN):$$PATH
 
-.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci data data-validate execution strategies wasm m4 m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 report deliverables demo m9 clean
+.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci public-evidence data data-validate execution strategies wasm m4 m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 report deliverables demo m9 clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -18,6 +18,7 @@ help:
 	@echo "  make build      build bin/project"
 	@echo "  make test       run all Go tests"
 	@echo "  make ci         run the complete M0 quality gate"
+	@echo "  make public-evidence  check reports and files available in a fresh clone"
 	@echo "  make data       download, verify, and normalize the M1 snapshot"
 	@echo "  make data-validate  rebuild M1 outputs from the local raw snapshot"
 	@echo "  make execution  run M2 accounting acceptance scenarios"
@@ -69,6 +70,9 @@ fmt-check:
 	fi
 
 ci: fmt-check vet test build
+
+public-evidence:
+	@python3 ./scripts/verify-public-evidence.py
 
 data:
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project data build

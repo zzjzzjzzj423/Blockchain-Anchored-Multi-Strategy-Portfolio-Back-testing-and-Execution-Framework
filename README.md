@@ -39,6 +39,12 @@ make test
 
 ## 当前 CLI
 
+### 克隆后的可验证范围
+
+直接运行 `make public-evidence` 可检查已提交报告中的参数身份、run ID、Merkle root、重放计数与交付清单中**实际存在**文件的 SHA-256。该检查只证明公开仓库内的报告和文件彼此一致，不能替代原始行情重建、Merkle proof 校验或链上交易复核。
+
+`data/raw/`、`data/normalized/` 与 `artifacts/<run_id>/` 在 `.gitignore` 中，完整 568-leaf evidence bundle 不随 Git 仓库分发。若要独立运行 `make demo` 或 `make replay`，需先按 `make data` 获取并校验固定数据，再取得与报告 root 相符的完整 bundle；链上演示另需本地 Foundry/Anvil。提交到 chain ID 31337 的记录属于本地测试链，没有公开链的持续可查询性或最终性。对外展示时应明确这一限制。
+
 ```text
 project doctor   检查工具可用性、版本和首次需要它的里程碑
 project data build      下载、校验并规范化固定数据快照
