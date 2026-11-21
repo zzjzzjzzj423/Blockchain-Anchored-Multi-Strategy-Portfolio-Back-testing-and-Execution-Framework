@@ -4,6 +4,22 @@ MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系�
 
 当前状态：**M0-M9 全部完成**。2025 final holdout、canonical evidence、Merkle proofs、本地 EVM 锚定和 deterministic replay 均已通过冻结门禁；10/10 clean replay 字节一致，seed 5017 的 100/100 单字节 mutation 均被检测并定位。技术报告、五张可追溯图、D1-D3 清单和隔离 checkout rehearsal 已完成。
 
+## 可选扩展：AI 参数提议与交互式证据看板
+
+`make dashboard` 会校验五张已提交 SVG 的 SHA-256，并生成可直接在浏览器打开的 [`docs/dashboard/index.html`](docs/dashboard/index.html)。页面可切换收益、回撤、权重、成本和市场状态图，同时展示冻结的 holdout 指标、Merkle root、重放及单字节变异验证记录。它是从报告生成的只读前端，不接交易所、不提交链上交易，也不重新计算或修改正式结果；因此无需常驻后端。
+
+`make agent-search` 可在已执行 `make data` 的本地 checkout 上，运行一个 **development-only** 的 Codex app-server 参数提议实验。首个候选是固定 baseline；之后 Codex 只接收已评价候选的开发集聚合指标和参数，返回有限空间中的下一个候选。Go 引擎负责参数校验、四折回测、成本核算及冻结规则排名。输出仅写入被 Git 忽略的 `artifacts/development/agent_search_v2_*`，含 `search_trace.jsonl`、`fold_metrics.json` 和 `summary.json`；不会改写 `configs/selected_parameters.json`、2025 holdout、M6 Merkle root 或 M0-M9 报告。AI 搜索的结果属于补充实验，不能与已冻结的正式验证结果混称。
+
+需要已登录的 Codex CLI（`codex login status`），也可以显式指定路径：
+
+```bash
+./bin/project experiment agent-search --root . --budget 3 --codex-bin /path/to/codex
+```
+
+预算为 1–20；默认 3。模型调用失败时默认报错，只有显式加 `--allow-manual-fallback` 才调用确定性手动提议器，并在 trace 和摘要中记录回退次数。完整运行还需要本地固定数据快照，克隆仓库后先执行 `make data`。
+
+仓库附有一次真实的 3 候选试运行：[`docs/agent_pilot/summary.json`](docs/agent_pilot/summary.json)、[`search_trace.jsonl`](docs/agent_pilot/search_trace.jsonl) 和 [`fold_metrics.json`](docs/agent_pilot/fold_metrics.json)。Codex 提议了 2 个候选，0 次回退；该小样本中固定 baseline 仍胜出。trace 和四折指标的 SHA-256 写在摘要里，并由仪表盘构建脚本校验。这证明提议链路已实际执行，不证明 AI 提高了收益或发现了全局最优参数。
+
 ## 规格与计划
 
 - [`SPEC.md`](SPEC.md)：冻结的实验、时间语义、指标和证据格式规范；

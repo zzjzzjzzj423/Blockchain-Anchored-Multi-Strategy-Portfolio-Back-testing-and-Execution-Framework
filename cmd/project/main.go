@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"msbd5017/portfolio-proof/internal/canonical"
 	"msbd5017/portfolio-proof/internal/chain"
@@ -227,8 +228,38 @@ func runEvidence(ctx context.Context, args []string) int {
 
 func runExperiment(ctx context.Context, args []string) int {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "experiment command requires one of: select, freeze-final, final")
+		fmt.Fprintln(os.Stderr, "experiment command requires one of: select, freeze-final, final, agent-search")
 		return 2
+	}
+	if args[0] == "agent-search" {
+		flags := flag.NewFlagSet("project experiment agent-search", flag.ContinueOnError)
+		flags.SetOutput(io.Discard)
+		root := flags.String("root", ".", "repository root")
+		budget := flags.Int("budget", 3, "unique development candidate budget, 1-20")
+		model := flags.String("model", "", "Codex model override")
+		codexBin := flags.String("codex-bin", "", "Codex executable path")
+		bridge := flags.String("bridge", "", "Python app-server bridge path")
+		timeout := flags.Int("timeout", 120, "seconds per Codex proposal")
+		fallback := flags.Bool("allow-manual-fallback", false, "record manual fallback if Codex fails")
+		if err := flags.Parse(args[1:]); err != nil {
+			fmt.Fprintf(os.Stderr, "invalid agent-search options: %v\n", err)
+			return 2
+		}
+		if *timeout < 10 || *timeout > 600 {
+			fmt.Fprintln(os.Stderr, "timeout must be 10-600 seconds")
+			return 2
+		}
+		proposer := &experiment.CodexProposer{Bridge: *bridge, CodexBin: *codexBin, Model: *model, Timeout: time.Duration(*timeout) * time.Second, AllowManualFallback: *fallback}
+		if proposer.Bridge == "" {
+			proposer.Bridge = filepath.Join(*root, "scripts", "codex_propose.py")
+		}
+		report, err := experiment.RunAgentSearch(ctx, *root, *budget, proposer)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "agent search failed: %v\n", err)
+			return 1
+		}
+		fmt.Printf("agent search completed: candidates=%d codex_calls=%d fallbacks=%d selected=%s output=%s\n", report.CandidatesEvaluated, report.CodexCalls, report.ManualFallbacks, report.SelectedCandidateID, report.OutputDirectory)
+		return 0
 	}
 	if args[0] == "freeze-final" {
 		flags := flag.NewFlagSet("project experiment freeze-final", flag.ContinueOnError)
@@ -413,6 +444,7 @@ func printUsage() {
   project execution validate the deterministic accounting core
   project strategies validate the M3 strategies and deterministic merge
   project experiment select run M4 walk-forward selection and freeze parameters
+  project experiment agent-search run optional development-only Codex proposals
   project experiment freeze-final freeze the M5 regime threshold without opening 2025
   project experiment final run the one-time formal 2025 holdout experiment
   project evidence build build the canonical bundle and ordered SHA-256 Merkle tree

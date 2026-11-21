@@ -6,10 +6,12 @@ GO := $(if $(wildcard $(LOCAL_GO)),$(LOCAL_GO),go)
 GOFMT := $(dir $(GO))gofmt
 BIN_DIR := $(CURDIR)/bin
 GO_ENV := GOCACHE=$(CURDIR)/.cache/go-build GOMODCACHE=$(CURDIR)/.cache/go-mod GOTELEMETRY=off GOTOOLCHAIN=local
+CODEX_APP_BIN := /Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex
+CODEX_BIN ?= $(if $(wildcard $(CODEX_APP_BIN)),$(CODEX_APP_BIN),codex)
 FOUNDRY_BIN := $(CURDIR)/.tools/foundry-v1.9.0/bin
 FOUNDRY_ENV := FOUNDRY_DIR=$(CURDIR)/.cache/foundry SVM_HOME=$(CURDIR)/.cache/svm PATH=$(FOUNDRY_BIN):$$PATH
 
-.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci public-evidence data data-validate execution strategies wasm m4 m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 report deliverables demo m9 clean
+.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci public-evidence data data-validate execution strategies wasm m4 agent-search dashboard m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 report deliverables demo m9 clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -25,6 +27,8 @@ help:
 	@echo "  make strategies run M3 strategies, no-look-ahead, and parallel checks"
 	@echo "  make wasm       build three portable WASI strategy modules"
 	@echo "  make m4         run 20-candidate walk-forward selection and freeze parameters"
+	@echo "  make agent-search  run an optional development-only Codex search"
+	@echo "  make dashboard  build a read-only interactive evidence viewer"
 	@echo "  make m5-freeze  freeze the development-only regime threshold"
 	@echo "  make m5         run the one-time formal 2025 final holdout"
 	@echo "  make m6         build and verify the canonical evidence bundle 10 times"
@@ -94,6 +98,12 @@ wasm:
 
 m4:
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project experiment select --budget 20
+
+agent-search:
+	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project experiment agent-search --budget 3 --codex-bin "$(CODEX_BIN)"
+
+dashboard:
+	@python3 ./scripts/build-dashboard.py
 
 m5-freeze:
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project experiment freeze-final
