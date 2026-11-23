@@ -11,7 +11,7 @@ CODEX_BIN ?= $(if $(wildcard $(CODEX_APP_BIN)),$(CODEX_APP_BIN),codex)
 FOUNDRY_BIN := $(CURDIR)/.tools/foundry-v1.9.0/bin
 FOUNDRY_ENV := FOUNDRY_DIR=$(CURDIR)/.cache/foundry SVM_HOME=$(CURDIR)/.cache/svm PATH=$(FOUNDRY_BIN):$$PATH
 
-.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci public-evidence data data-validate execution strategies wasm m4 agent-search agent-workflow dashboard m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 report deliverables demo m9 clean
+.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci public-evidence data data-validate execution strategies wasm m4 agent-search agent-workflow agent agent-bootstrap agent-test research-pipeline dashboard m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 report deliverables demo m9 clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -28,7 +28,7 @@ help:
 	@echo "  make wasm       build three portable WASI strategy modules"
 	@echo "  make m4         run 20-candidate walk-forward selection and freeze parameters"
 	@echo "  make agent-search  run a development-only Codex search"
-	@echo "  make agent-workflow  run the full agent research, execution, replay and report pipeline"
+	@echo "  make agent       run the LangGraph agent with tool calling and SQLite memory"
 	@echo "  make dashboard  build a read-only interactive evidence viewer"
 	@echo "  make m5-freeze  freeze the development-only regime threshold"
 	@echo "  make m5         run the one-time formal 2025 final holdout"
@@ -103,7 +103,22 @@ m4:
 agent-search:
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project experiment agent-search --budget 3 --codex-bin "$(CODEX_BIN)"
 
-agent-workflow:
+agent-bootstrap: .venv-agent/.ready
+
+.venv-agent/.ready: requirements-agent.lock
+	@uv venv --python 3.12 .venv-agent --allow-existing
+	@uv pip sync --python .venv-agent/bin/python requirements-agent.lock
+	@touch .venv-agent/.ready
+
+agent: agent-bootstrap
+	@PYTHONPATH=agents .venv-agent/bin/python -m portfolio_agent.cli --budget 20 --codex-bin "$(CODEX_BIN)"
+
+agent-workflow: agent
+
+agent-test: agent-bootstrap
+	@PYTHONPATH=agents .venv-agent/bin/python -m unittest discover -s agents/tests -v
+
+research-pipeline:
 	@python3 scripts/agent_workflow.py --budget 20 --codex-bin "$(CODEX_BIN)"
 
 dashboard:

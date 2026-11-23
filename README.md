@@ -4,13 +4,49 @@ MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系�
 
 当前状态：**M0-M9 全部完成**。2025 final holdout、canonical evidence、Merkle proofs、本地 EVM 锚定和 deterministic replay 均已通过冻结门禁；10/10 clean replay 字节一致，seed 5017 的 100/100 单字节 mutation 均被检测并定位。技术报告、五张可追溯图、D1-D3 清单和隔离 checkout rehearsal 已完成。
 
-## 完整 Agent 研究流程
+## V2：执行证据、多方审核与行情交叉验证
+
+[`docs/V2_PROTOCOL.md`](docs/V2_PROTOCOL.md) 说明 v2 证据格式、角色签名、数据故障处理和信任边界。
+
+- Go v2 bundle 复用已有 Merkle 编码，为 Agent/tool trace、完整交易账本、输入快照和质量报告生成逐文件 proof，支持局部文件验证。
+- Agent 新增 `audit_market_data` 工具；缺失、损坏、配置偏离、来源不可用或价格分歧会阻止研究。
+- Binance 与 Coinbase 的 21 个历史日线收盘价在声明的 200 bps 容差内比较；原始响应及 hash 入包，审核端离线重算。
+- 发布者和审核者使用不同授权 Ed25519 密钥签署同一个根；审核签名前执行证据校验、行情重算及确定性重放。私钥不交给 Agent。
+- 多源一致性提供有限佐证，不等于证明行情真实。v2 新证据不自动上链，v1 本地 EVM 证据保留。
+
+## LangGraph Agent 框架
+
+当前 Agent 框架位于 [`agents/portfolio_agent/`](agents/portfolio_agent/)。使用 LangGraph `StateGraph` 的 **agent → tools → agent** 循环：每轮模型根据目标、状态记忆和工具反馈决定工具名称与参数；条件边根据模型选择继续调用或结束。
 
 ```bash
-make agent-workflow
+make agent-bootstrap  # uv 创建 Python 3.12 环境并安装锁定依赖
+make agent            # 新建目标会话，默认总预算 20 候选
+make agent-test       # 框架的 checkpoint、失败恢复和结束门禁测试
 ```
 
-一条命令依次完成：构建 Go 工具 → 检查固定数据（缺少时下载）→ Agent 研究计划 → 20 候选反馈搜索 → 执行选中策略并导出完整交易/账本 → 无模型确定性重放 → Agent 结果复盘 → 本次运行的网页可视化 → SHA-256 证据封装和验证。
+主要组件：
+
+- `runtime.py`：LangGraph 状态图、LangChain AIMessage/ToolMessage、工具注册调用、步数约束和逐步 trace。
+- `provider.py`：可替换的 `ModelProvider` 适配器，当前通过 Codex app-server 返回结构化工具请求。
+- `tools.py`：`prepare_environment`、`run_research`、`inspect_candidate`、`replay_research`、`write_report` 和 `audit_market_data` 六个带 schema 的工具；模型无法传入任意 shell 命令或输出路径。
+- `cli.py`：SQLite checkpoint、会话创建、跨进程恢复、图结构导出和最终证据封装。
+
+运行目录为 `artifacts/langgraph_*`，包含 `checkpoints.sqlite`、`events.jsonl`、每次工具调用的收据、实际 `graph.mmd` 和 `outputs/index.html`。模型可决定何时检查候选、何时重放、如何解释风险；工具执行错误会作为 observation 返回模型。结束门禁要求花完指定研究预算、重放成功并生成报告。策略计算仍由现有 Go 引擎完成，Agent 框架负责决策和调用工具。
+
+```bash
+PYTHONPATH=agents .venv-agent/bin/python -m portfolio_agent.cli --budget 6 --codex-bin /path/to/codex
+PYTHONPATH=agents .venv-agent/bin/python -m portfolio_agent.cli --resume artifacts/langgraph_SESSION --codex-bin /path/to/codex
+```
+
+checkpoint 在图节点边界保存状态；已完成工具调用通过同一 call ID 的收据复用。内层搜索工具执行期间的中断可能需要重跑该工具，不承诺模型请求或单个回测内部任意位置恢复。`make agent-workflow` 现在指向 LangGraph 入口。
+
+## 固定编排研究脚本（保留兼容）
+
+```bash
+make research-pipeline
+```
+
+旧版固定脚本依次完成：构建 Go 工具 → 检查固定数据（缺少时下载）→ Agent 研究计划 → 20 候选反馈搜索 → 执行选中策略并导出完整交易/账本 → 无模型确定性重放 → Agent 结果复盘 → 本次运行的网页可视化 → SHA-256 证据封装和验证。
 
 输出目录为 `artifacts/workflow_*`，终端成功后打印 `WORKFLOW_COMPLETED` 和路径。打开其中的 `index.html` 可查看本次开发集净值曲线、候选对比和 Agent 复盘；`workflow.json` 记录各阶段状态，失败时保留诊断文件并以非零状态退出。`agent_plan.json`、`search_trace.jsonl`、`agent_review.json` 记录模型参与；`ensemble_trades.csv`、`ensemble_ledger.csv` 等是 Go 引擎执行的结果。Agent 负责研究决策，Go 工具负责受约束的计算和会计，不把模型的自然语言当作收益数据。
 

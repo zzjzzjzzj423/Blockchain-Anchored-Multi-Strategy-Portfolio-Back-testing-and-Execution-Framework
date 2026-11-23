@@ -154,6 +154,39 @@ func runChain(ctx context.Context, args []string) int {
 }
 
 func runEvidence(ctx context.Context, args []string) int {
+	if len(args) > 0 && (args[0] == "pack-v2" || args[0] == "verify-v2") {
+		flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
+		source := flags.String("source", "", "source evidence directory")
+		bundle := flags.String("bundle", "", "v2 bundle directory")
+		if err := flags.Parse(args[1:]); err != nil {
+			return 2
+		}
+		if *bundle == "" {
+			fmt.Fprintln(os.Stderr, "--bundle required")
+			return 2
+		}
+		var report evidence.VerifyReport
+		var err error
+		if args[0] == "pack-v2" {
+			if *source == "" {
+				return 2
+			}
+			report, err = evidence.PackV2(*source, *bundle)
+		} else {
+			report, err = evidence.VerifyV2(*bundle)
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		content, err := canonical.JSON(report)
+		if err != nil {
+			return 1
+		}
+		fmt.Print(string(content))
+		return 0
+	}
+
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "evidence command requires one of: build, verify, prove, verify-proof")
 		return 2

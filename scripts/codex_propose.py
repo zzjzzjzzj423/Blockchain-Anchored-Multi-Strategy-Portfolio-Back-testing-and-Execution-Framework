@@ -152,7 +152,7 @@ class AppServer:
 
 
 def propose(request, codex_bin, model, timeout):
-    prompt = "" if request.get("task") in {"plan", "review"} else prompt_for(request)
+    prompt = "" if request.get("task") in {"plan", "review", "framework_turn"} else prompt_for(request)
     schema = SCHEMA
     if request.get("task") in {"plan", "review"}:
         prompt = ("You are the portfolio research agent. Use only supplied development evidence. "
@@ -162,6 +162,8 @@ def propose(request, codex_bin, model, timeout):
                   + json.dumps(request, sort_keys=True))
         schema = {"type":"object","properties":{k:{"type":"string","maxLength":1000} for k in ("analysis","risks","next_actions")},
                   "required":["analysis","risks","next_actions"],"additionalProperties":False}
+    if request.get("task") == "framework_turn":
+        prompt, schema = request["prompt"], request["output_schema"]
     options = request.get("options")
     if options:
         prompt += "\nChoose exactly one candidate_index from these host-validated unseen options. Do not invent parameters. Available options: " + json.dumps(options)

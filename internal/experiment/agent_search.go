@@ -52,6 +52,9 @@ func (p *CodexProposer) Propose(history []CandidateAssessment) (Proposal, error)
 			return proposal, nil
 		}
 		last = err
+		if strings.Contains(err.Error(), "usageLimitExceeded") || strings.Contains(err.Error(), "usage limit") {
+			return Proposal{}, err
+		}
 		p.Rejections = append(p.Rejections, err.Error())
 		if p.Context != nil && p.Context.Err() != nil {
 			return Proposal{}, p.Context.Err()

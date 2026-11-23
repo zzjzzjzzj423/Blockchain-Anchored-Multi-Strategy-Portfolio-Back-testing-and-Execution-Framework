@@ -35,3 +35,10 @@ __pycache__/
 /Lecture*.pdf
 /MSBD5017 Project Tracks*.pdf
 /lecture_figures/
+
+# Local Agent framework environment
+/.venv-agent/
+
+# Local review signing keys
+*.pem
+*.key
