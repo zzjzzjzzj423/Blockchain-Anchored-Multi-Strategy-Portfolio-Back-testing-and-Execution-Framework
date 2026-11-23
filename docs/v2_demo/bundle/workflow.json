@@ -1,0 +1,18 @@
+{
+  "facts": {
+    "data_audited": true,
+    "inspected": [
+      "876f735a303b9583b85bf2a427232ab600ec7ee125da7eec185a748854cf51d7",
+      "d0c5a4f200ae76c68d816a58e59046d74c324f252e21c4005f6fefae0a298e05"
+    ],
+    "ready": true,
+    "remaining_budget": 0,
+    "replayed": true,
+    "report": true,
+    "research": "research_agent_search_v2_4138544446"
+  },
+  "final_answer": "All six candidates were evaluated, selected and baseline tradeoffs inspected, replay passed byte-identically, and the visual evidence-based report was successfully generated at outputs/index.html.",
+  "framework": "LangGraph",
+  "status": "completed",
+  "steps": 8
+}

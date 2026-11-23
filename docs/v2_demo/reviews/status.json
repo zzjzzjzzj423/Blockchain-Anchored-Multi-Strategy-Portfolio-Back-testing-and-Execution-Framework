@@ -1,0 +1,10 @@
+{
+  "approved_roles": {
+    "publisher": 1,
+    "reviewer": 1
+  },
+  "distinct_keys": 2,
+  "identity_scope": "Local two-key protocol simulation only; no claim of independent human review.",
+  "root": "5f93c8b530fce0ccbafad2c2f0b64bbdaf214d79d6fe92b0b94b3f69390e067f",
+  "state": "approved"
+}

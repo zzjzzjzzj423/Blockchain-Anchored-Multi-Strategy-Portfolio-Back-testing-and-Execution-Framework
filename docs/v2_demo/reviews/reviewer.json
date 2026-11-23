@@ -1,0 +1,12 @@
+{
+  "signature": "b661cef18b6c8761c22fef68ade56767b7401ea75df69e222dcc41cb80bb9ec0b8055dda8ca8c0bb9e3e6f800b905c888255ff254ed1b10fa29f7ddf564a7107",
+  "statement": {
+    "comment": "Local reviewer protocol test after offline source recomputation and Go replay",
+    "decision": "approve",
+    "domain": "portfolio-evidence-review-v2",
+    "policy_sha256": "f03af55489c9de0a8cf5f35f2c34ab5a8b76abbf9ed75c6c08fddbc53407b242",
+    "public_key": "34ed30ed9a376948b2bc0a9871bdeaecfec34d59d9d3d4a3e629708eb7b6b704",
+    "role": "reviewer",
+    "root": "5f93c8b530fce0ccbafad2c2f0b64bbdaf214d79d6fe92b0b94b3f69390e067f"
+  }
+}

@@ -8,6 +8,8 @@ MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系�
 
 [`docs/V2_PROTOCOL.md`](docs/V2_PROTOCOL.md) 说明 v2 证据格式、角色签名、数据故障处理和信任边界。
 
+[`docs/v2_demo/index.html`](docs/v2_demo/index.html) 提供已跑通的 LangGraph 实例：跨进程 checkpoint 恢复、8 轮模型工具决策、6 候选研究、确定性重放、37-leaf v2 bundle、12/12 故障检出及本地双密钥签名流程。所有证据和公开签名一并提交，私钥不分发。双密钥演示不代表已获得真实团队成员的独立审核。
+
 - Go v2 bundle 复用已有 Merkle 编码，为 Agent/tool trace、完整交易账本、输入快照和质量报告生成逐文件 proof，支持局部文件验证。
 - Agent 新增 `audit_market_data` 工具；缺失、损坏、配置偏离、来源不可用或价格分歧会阻止研究。
 - Binance 与 Coinbase 的 21 个历史日线收盘价在声明的 200 bps 容差内比较；原始响应及 hash 入包，审核端离线重算。

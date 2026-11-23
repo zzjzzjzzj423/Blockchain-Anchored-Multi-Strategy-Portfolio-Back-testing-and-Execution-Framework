@@ -1,0 +1,13 @@
+{
+  "checked_rows": 4383,
+  "config_issues": [],
+  "expected_rows": 4383,
+  "interval": [
+    "2021-01-01",
+    "2024-12-31"
+  ],
+  "issue_count": 0,
+  "issues": [],
+  "normalized_sha256": "f6d2e60b8a397e9870412e229e0b0de0391f8970c5a963fc90119367eaced714",
+  "status": "passed"
+}

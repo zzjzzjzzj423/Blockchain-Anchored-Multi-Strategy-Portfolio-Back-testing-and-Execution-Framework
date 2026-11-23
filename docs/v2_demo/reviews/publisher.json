@@ -1,0 +1,12 @@
+{
+  "signature": "cdaf69c5e87bf4d2f8cb782dc92f9f0318bb52059bb87a18ef57ea98bca806eed1f3a68545dbbf5cb6b9511226eec28814850b9e706b11668e67ce22f0d5b309",
+  "statement": {
+    "comment": "Local publisher protocol test",
+    "decision": "approve",
+    "domain": "portfolio-evidence-review-v2",
+    "policy_sha256": "f03af55489c9de0a8cf5f35f2c34ab5a8b76abbf9ed75c6c08fddbc53407b242",
+    "public_key": "e924e4ae775ca57ae3b06c6c48658f24571ceb15886be1f929694bc423f4c025",
+    "role": "publisher",
+    "root": "5f93c8b530fce0ccbafad2c2f0b64bbdaf214d79d6fe92b0b94b3f69390e067f"
+  }
+}

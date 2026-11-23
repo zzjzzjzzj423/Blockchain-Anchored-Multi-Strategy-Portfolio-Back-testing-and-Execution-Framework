@@ -1,0 +1,209 @@
+{
+  "compared_rows": 21,
+  "comparison_interval": [
+    "2024-12-01",
+    "2024-12-07"
+  ],
+  "errors": [],
+  "primary_normalized_sha256": "f6d2e60b8a397e9870412e229e0b0de0391f8970c5a963fc90119367eaced714",
+  "primary_sample_sha256": "956db20f279baef670e8a635b66c5c58be3852a8bfddc96164d4a090ffed2b45",
+  "primary_source": "binance_vision",
+  "quote_basis": "Binance USDT versus Coinbase USD; tolerance includes venue and quote differences",
+  "rows": [
+    {
+      "date": "2024-12-01",
+      "deviation_bps": 8.025915,
+      "primary_close": 97185.18,
+      "secondary_close": 97263.18,
+      "symbol": "BTCUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-02",
+      "deviation_bps": 2.323649,
+      "primary_close": 95840.62,
+      "secondary_close": 95862.89,
+      "symbol": "BTCUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-03",
+      "deviation_bps": 7.807015,
+      "primary_close": 95849.69,
+      "secondary_close": 95924.52,
+      "symbol": "BTCUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-04",
+      "deviation_bps": 16.11972,
+      "primary_close": 98587.32,
+      "secondary_close": 98746.24,
+      "symbol": "BTCUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-05",
+      "deviation_bps": 10.170649,
+      "primary_close": 96945.63,
+      "secondary_close": 97044.23,
+      "symbol": "BTCUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-06",
+      "deviation_bps": 15.090108,
+      "primary_close": 99740.84,
+      "secondary_close": 99891.35,
+      "symbol": "BTCUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-07",
+      "deviation_bps": 9.74938,
+      "primary_close": 99831.99,
+      "secondary_close": 99929.32,
+      "symbol": "BTCUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-01",
+      "deviation_bps": 7.093518,
+      "primary_close": 3707.61,
+      "secondary_close": 3710.24,
+      "symbol": "ETHUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-02",
+      "deviation_bps": 3.019141,
+      "primary_close": 3643.42,
+      "secondary_close": 3644.52,
+      "symbol": "ETHUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-03",
+      "deviation_bps": 8.52121,
+      "primary_close": 3614.51,
+      "secondary_close": 3617.59,
+      "symbol": "ETHUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-04",
+      "deviation_bps": 14.409297,
+      "primary_close": 3837.8,
+      "secondary_close": 3843.33,
+      "symbol": "ETHUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-05",
+      "deviation_bps": 9.854169,
+      "primary_close": 3785.2,
+      "secondary_close": 3788.93,
+      "symbol": "ETHUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-06",
+      "deviation_bps": 14.90421,
+      "primary_close": 3998.87,
+      "secondary_close": 4004.83,
+      "symbol": "ETHUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-07",
+      "deviation_bps": 9.483962,
+      "primary_close": 3996.22,
+      "secondary_close": 4000.01,
+      "symbol": "ETHUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-01",
+      "deviation_bps": 6.334459,
+      "primary_close": 236.8,
+      "secondary_close": 236.95,
+      "symbol": "SOLUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-02",
+      "deviation_bps": 3.101187,
+      "primary_close": 225.72,
+      "secondary_close": 225.79,
+      "symbol": "SOLUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-03",
+      "deviation_bps": 7.694938,
+      "primary_close": 233.92,
+      "secondary_close": 234.1,
+      "symbol": "SOLUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-04",
+      "deviation_bps": 14.837443,
+      "primary_close": 229.15,
+      "secondary_close": 229.49,
+      "symbol": "SOLUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-05",
+      "deviation_bps": 12.296472,
+      "primary_close": 235.84,
+      "secondary_close": 236.13,
+      "symbol": "SOLUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-06",
+      "deviation_bps": 14.353865,
+      "primary_close": 236.87,
+      "secondary_close": 237.21,
+      "symbol": "SOLUSDT",
+      "within_tolerance": true
+    },
+    {
+      "date": "2024-12-07",
+      "deviation_bps": 8.818342,
+      "primary_close": 238.14,
+      "secondary_close": 238.35,
+      "symbol": "SOLUSDT",
+      "within_tolerance": true
+    }
+  ],
+  "schema_version": "2.0.0",
+  "secondary_sources": [
+    {
+      "product": "BTC-USD",
+      "raw_file": "BTC-USD.json",
+      "raw_sha256": "807a35c25a148c8ce05454af8dafd6a61dae5d102a4557e357f764ebb1d9f9ca",
+      "source_id": "coinbase_exchange",
+      "url": "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2024-12-01T00%3A00%3A00Z&end=2024-12-08T00%3A00%3A00Z"
+    },
+    {
+      "product": "ETH-USD",
+      "raw_file": "ETH-USD.json",
+      "raw_sha256": "b0c5a46f97fd5c892efb229323e0817f9ed3e6eb2844a68848f7f5532c7f8c3d",
+      "source_id": "coinbase_exchange",
+      "url": "https://api.exchange.coinbase.com/products/ETH-USD/candles?granularity=86400&start=2024-12-01T00%3A00%3A00Z&end=2024-12-08T00%3A00%3A00Z"
+    },
+    {
+      "product": "SOL-USD",
+      "raw_file": "SOL-USD.json",
+      "raw_sha256": "bc8e72b4571025ebd3df29051be07c6edd800f548b0851796711dfcd88752060",
+      "source_id": "coinbase_exchange",
+      "url": "https://api.exchange.coinbase.com/products/SOL-USD/candles?granularity=86400&start=2024-12-01T00%3A00%3A00Z&end=2024-12-08T00%3A00%3A00Z"
+    }
+  ],
+  "status": "corroborated",
+  "tolerance_bps": 200,
+  "truth_claim": "Cross-source consistency for 21 historical daily closes only; hashes commit to snapshots, not market truth or source independence guarantees."
+}

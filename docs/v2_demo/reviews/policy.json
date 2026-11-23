@@ -1,0 +1,11 @@
+{
+  "identity_scope": "Local two-key protocol simulation only; no claim of independent human review.",
+  "roles": {
+    "publisher": [
+      "e924e4ae775ca57ae3b06c6c48658f24571ceb15886be1f929694bc423f4c025"
+    ],
+    "reviewer": [
+      "34ed30ed9a376948b2bc0a9871bdeaecfec34d59d9d3d4a3e629708eb7b6b704"
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "duplicate_party_rejected": true,
+  "partial_file_verified_without_other_leaves": true,
+  "reviewer_rejection_blocks_approval": true,
+  "self_review_rejected": true,
+  "tampered_partial_file_rejected": true
+}

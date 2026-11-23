@@ -1,0 +1,1 @@
+{"candidate_budget":6,"candidate_id":"d0c5a4f200ae76c68d816a58e59046d74c324f252e21c4005f6fefae0a298e05","final_holdout_opened":false,"parameters":{"allocator":{"reliability_window":63,"volatility_window":60},"mean_reversion":{"entry_z":"-1.500000000000","exit_z":"0.000000000000","lookback":20},"trend":{"fast_window":20,"slow_window":100}},"schema_version":"agent-workflow-1"}

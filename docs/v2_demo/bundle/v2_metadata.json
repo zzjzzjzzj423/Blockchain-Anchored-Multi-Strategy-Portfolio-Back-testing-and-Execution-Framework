@@ -1,0 +1,9 @@
+{
+  "framework": "LangGraph",
+  "market_data_scope": "21 historical daily closes; corroboration is not proof of truth",
+  "replay_verified": true,
+  "review_state": "awaiting_independent_signatures",
+  "schema_version": "2.0.0",
+  "source_commit": "06061313d6984b7c47af6d6d22089be9d450e5c5",
+  "trace_sha256": "8c6f6e691becc778a50ff9b775fdb7f7300602a11bcee5751dae88b6ff525cb7"
+}
