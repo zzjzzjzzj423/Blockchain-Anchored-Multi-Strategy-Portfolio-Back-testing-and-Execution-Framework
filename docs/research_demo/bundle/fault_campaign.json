@@ -1,0 +1,67 @@
+{
+  "cases": [
+    {
+      "detected": true,
+      "fault": "nonfinite_price",
+      "issue_count": 2
+    },
+    {
+      "detected": true,
+      "fault": "negative_volume",
+      "issue_count": 2
+    },
+    {
+      "detected": true,
+      "fault": "invalid_ohlc",
+      "issue_count": 2
+    },
+    {
+      "detected": true,
+      "fault": "zero_price",
+      "issue_count": 2
+    },
+    {
+      "detected": true,
+      "fault": "invalid_timestamp",
+      "issue_count": 2
+    },
+    {
+      "detected": true,
+      "fault": "unknown_asset",
+      "issue_count": 2
+    },
+    {
+      "detected": true,
+      "fault": "missing_bar",
+      "issue_count": 1
+    },
+    {
+      "detected": true,
+      "fault": "duplicate_bar",
+      "issue_count": 1
+    },
+    {
+      "detected": true,
+      "fault": "stale_feed_tail",
+      "issue_count": 1
+    },
+    {
+      "detected": true,
+      "fault": "out_of_order",
+      "issue_count": 4383
+    },
+    {
+      "detected": true,
+      "fault": "parameter_or_cost_config_drift:configs/costs.json"
+    },
+    {
+      "detected": true,
+      "fault": "parameter_or_cost_config_drift:configs/strategies.json"
+    }
+  ],
+  "detected": 12,
+  "schema_version": "2.0.0",
+  "scope": "isolated mutations of real development observations and frozen config bytes",
+  "status": "passed",
+  "total": 12
+}

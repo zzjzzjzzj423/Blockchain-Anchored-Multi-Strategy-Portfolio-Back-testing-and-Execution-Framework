@@ -1,0 +1,24 @@
+{
+  "pages": [
+    "overview",
+    "agent",
+    "results",
+    "stress",
+    "data",
+    "evidence",
+    "reviews",
+    "faults"
+  ],
+  "files": 64,
+  "actions": [
+    "5 real counterfactual scenarios",
+    "验证这个文件",
+    "修改 1 字节试试",
+    "验证整个证据包",
+    "重新执行并比对账本",
+    "verify reviewer signatures",
+    "12 actual fault injections"
+  ],
+  "mobile_overflow": false,
+  "page_errors": []
+}

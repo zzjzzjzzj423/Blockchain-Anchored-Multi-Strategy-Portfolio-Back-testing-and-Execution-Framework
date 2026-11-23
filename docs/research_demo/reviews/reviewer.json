@@ -1,0 +1,12 @@
+{
+  "signature": "e97e45e5ba1cdb0073de9e4d13b7e7eafa7034fe4fe8ea3644c83765d2d80b44ed6329332c5e7e4dba3a4a341e42b1c3570184f89d7eb0c55baa4d3673219607",
+  "statement": {
+    "comment": "Local protocol demonstration: full reference inventory, recorded counterfactuals and deterministic replay checked",
+    "decision": "approve",
+    "domain": "portfolio-evidence-review-v2",
+    "policy_sha256": "f03af55489c9de0a8cf5f35f2c34ab5a8b76abbf9ed75c6c08fddbc53407b242",
+    "public_key": "34ed30ed9a376948b2bc0a9871bdeaecfec34d59d9d3d4a3e629708eb7b6b704",
+    "role": "reviewer",
+    "root": "84c36d1037cfbea9ad9eac08afde48c288b13f71e159ae4c2b82fd1e28b6706f"
+  }
+}

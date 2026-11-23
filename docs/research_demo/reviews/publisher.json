@@ -1,0 +1,12 @@
+{
+  "signature": "1c3f75a9283a4a9c7665ff4f1faf823c6c8f34f1cca7cf2e7293d52bc173e342b511a330f8b3ff1249c187187945f69501982c60f03c27e8adc2f7601ef52401",
+  "statement": {
+    "comment": "Local demonstration of the web-launched falsifiable research bundle",
+    "decision": "approve",
+    "domain": "portfolio-evidence-review-v2",
+    "policy_sha256": "f03af55489c9de0a8cf5f35f2c34ab5a8b76abbf9ed75c6c08fddbc53407b242",
+    "public_key": "e924e4ae775ca57ae3b06c6c48658f24571ceb15886be1f929694bc423f4c025",
+    "role": "publisher",
+    "root": "84c36d1037cfbea9ad9eac08afde48c288b13f71e159ae4c2b82fd1e28b6706f"
+  }
+}

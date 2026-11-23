@@ -1,0 +1,16 @@
+{
+  "cross_source_tolerance_bps": 200,
+  "distinct_review_keys": true,
+  "frozen_config_sha256": {
+    "configs/costs.json": "35f66b728f6b8c84914b1cddcde5d3287a82856b07fac604030a81b024d29364",
+    "configs/data.json": "9f0f649b5393035638115084041145ef52683857311cca8d27879760cf49efa5",
+    "configs/final_experiment.json": "0fb770ea775541a11d48f3715c2903f67be101b0e9df9c61a5f36a4c00a6e61f",
+    "configs/strategies.json": "363df6404e83506f26a719454ad1725a4d3450779b37d045cbe786910cdd29b7"
+  },
+  "normalized_sha256": "f6d2e60b8a397e9870412e229e0b0de0391f8970c5a963fc90119367eaced714",
+  "review_roles": [
+    "publisher",
+    "reviewer"
+  ],
+  "schema_version": "2.0.0"
+}

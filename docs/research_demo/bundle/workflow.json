@@ -1,0 +1,20 @@
+{
+  "facts": {
+    "data_audited": true,
+    "hypothesis": true,
+    "inspected": [
+      "876f735a303b9583b85bf2a427232ab600ec7ee125da7eec185a748854cf51d7",
+      "d0c5a4f200ae76c68d816a58e59046d74c324f252e21c4005f6fefae0a298e05"
+    ],
+    "ready": true,
+    "remaining_budget": 0,
+    "replayed": true,
+    "report": true,
+    "research": "research_agent_search_v2_400088351",
+    "stress_tested": true
+  },
+  "final_answer": "\u5019\u9009\u4e0e baseline \u7684\u56db\u6298\u6743\u8861\u5df2\u68c0\u67e5\uff0c\u6210\u672c\u8106\u5f31\u6027\u5047\u8bbe\u53ca\u7ffb\u500d\u5b9e\u9a8c\u5df2\u5b8c\u6210\uff1b\u4f63\u91d1\u7ffb\u500d\u4f7f\u4e2d\u4f4d Sharpe \u4e0b\u964d 0.3451\uff0c\u89e6\u53d1\u56fa\u5b9a\u9608\u503c\uff0c\u6ed1\u70b9\u7ffb\u500d\u4e0b\u964d 0.2671\uff0c\u672a\u89e6\u53d1\u3002\u91cd\u653e\u9a8c\u8bc1\u548c\u62a5\u544a\u751f\u6210\u5747\u6210\u529f\uff0c\u5019\u9009\u9884\u7b97\u5df2\u8017\u5c3d\uff0c\u53ef\u4ee5\u7ed3\u675f\u3002",
+  "framework": "LangGraph",
+  "status": "completed",
+  "steps": 10
+}

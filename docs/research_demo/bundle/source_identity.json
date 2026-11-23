@@ -1,0 +1,26 @@
+{
+  "sha256": {
+    "agents/portfolio_agent/__init__.py": "58984d1c176587e17b73eb4f2537569dddc7d97a00067cb5bae97cf78349d785",
+    "agents/portfolio_agent/cli.py": "9c8f325b4333ecac0e3eef18164591a2e33c123f332861525bf6c81c6abd0f8e",
+    "agents/portfolio_agent/dataset.py": "80dde0c4680f758b38a309a24b431a979c410664865ac05da897cb5e54854d98",
+    "agents/portfolio_agent/market_data.py": "9fca6ade0f9966a404f3c0c8c79571eb32c213f8929a9bdc5eef6096240ee608",
+    "agents/portfolio_agent/portal.py": "07e15ef2f0b1b9ab79d60d46d700b3a003974a458cea90cb7b10d1fbb8763a8c",
+    "agents/portfolio_agent/provider.py": "9ac9fb219c03cc2569af00cc43961e7cd2c5448ca7c3d5dcf15c43b76a0be454",
+    "agents/portfolio_agent/review.py": "40b197d079f04c616932bbd8a69ea0b2797eb020d2d1f6ff317f71f1f6c47645",
+    "agents/portfolio_agent/runtime.py": "b0235b36182a4f343f39174bfafffee5e0baca1cbd449d5ac78f17f3520cb715",
+    "agents/portfolio_agent/tools.py": "4316ad550fd3e35cf12736341df52543f78c9f7de6a7d6ee4b12f428bfd90fa4",
+    "agents/portfolio_agent/web.py": "285dca00b93969c7c19349fc6a83b42da01f455b676adc3fdd548b17104927ae",
+    "configs/v2_policy.json": "a7af7371220377f2ac13fcda305c9dc077f98581aa6665416d7b3c60499e002a",
+    "internal/evidence/v2.go": "3c099a9c681a4ade896e9a742d5129711af4eaac311d9b4eeb571018cbbb9d45",
+    "internal/experiment/agent_replay.go": "2b03c7ef0ba979d401117963555c426ad4cecc6fb332111822ecd63cbe6d932d",
+    "internal/experiment/agent_search.go": "1238a8ed0cdb75830d3dc196092521f61fd9c33dde942dc4666368b83630f770",
+    "internal/experiment/counterfactual.go": "27246a4c42fbf5c5fd9182108c3783d919cf0797bac4dec04168b2f9c3a24ac7",
+    "requirements-agent.lock": "76b588b2daeac5f235b158d919589c689cfad6e62c54aabd3ba77f4677941c56",
+    "scripts/codex_propose.py": "4826f8cb42071ad7c331ce6afd54c190bbbc63886faa93231381efaa6d0c7f75",
+    "web/app.js": "f0ffa61478af46c06228fa64b2a0c2df5560d21520a18ce34a56ca13993fdb30",
+    "web/index.html": "372c36bdc7c5443c1746a3d3b8fac322f813ae5ef3afc78ed90de813fc986510",
+    "web/style.css": "08d31f08076ff597d29c53b1575d746737280db6256998ad4a7715fc7d133a52"
+  },
+  "source_commit": "f1d703f90914fb65f620dfae4b328e6771524faf",
+  "source_dirty": false
+}
