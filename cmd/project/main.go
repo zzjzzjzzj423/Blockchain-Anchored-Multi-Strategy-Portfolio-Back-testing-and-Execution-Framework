@@ -260,6 +260,25 @@ func runEvidence(ctx context.Context, args []string) int {
 }
 
 func runExperiment(ctx context.Context, args []string) int {
+	if len(args) > 0 && args[0] == "counterfactual" {
+		flags := flag.NewFlagSet("counterfactual", flag.ContinueOnError)
+		root := flags.String("root", ".", "repository root")
+		bundle := flags.String("bundle", "", "research bundle")
+		if err := flags.Parse(args[1:]); err != nil {
+			return 2
+		}
+		if *bundle == "" {
+			return 2
+		}
+		content, err := experiment.Counterfactual(ctx, *root, *bundle)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		fmt.Print(string(content))
+		return 0
+	}
+
 	if len(args) > 0 && args[0] == "agent-replay" {
 		flags := flag.NewFlagSet("agent-replay", flag.ContinueOnError)
 		root := flags.String("root", ".", "repository root")

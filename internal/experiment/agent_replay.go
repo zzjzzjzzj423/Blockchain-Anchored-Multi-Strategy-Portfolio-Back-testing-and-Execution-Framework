@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"msbd5017/portfolio-proof/internal/canonical"
 	projectdata "msbd5017/portfolio-proof/internal/data"
@@ -115,6 +116,24 @@ func ReplayAgentSearch(ctx context.Context, root, directory string) error {
 		if !bytes.Equal(actual, want) {
 			return fmt.Errorf("replay differs: %s", name)
 		}
+	}
+	if content, err := os.ReadFile(filepath.Join(directory, "counterfactual.json")); err == nil {
+		replayed, err := Counterfactual(ctx, root, directory)
+		if err != nil {
+			return err
+		}
+		var recordedDoc, replayedDoc any
+		if err := json.Unmarshal(content, &recordedDoc); err != nil {
+			return err
+		}
+		if err := json.Unmarshal(replayed, &replayedDoc); err != nil {
+			return err
+		}
+		if !reflect.DeepEqual(recordedDoc, replayedDoc) {
+			return fmt.Errorf("counterfactual replay differs")
+		}
+	} else if !os.IsNotExist(err) {
+		return err
 	}
 	return nil
 }

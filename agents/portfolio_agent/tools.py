@@ -7,11 +7,12 @@ import subprocess
 import sys
 from langchain_core.tools import tool
 from pydantic import Field
-from typing import Annotated
+from typing import Annotated, Literal
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts'))
 from agent_workflow import dashboard,write_json
 from .market_data import quality,cross_reference
 from .runtime import ExternalCapacityError
+from .dataset import verify_inventory
 
 
 class PortfolioContext:
@@ -26,7 +27,7 @@ class PortfolioContext:
             process=subprocess.Popen(args,cwd=self.root,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
             for line in process.stdout:
                 log.write(line);log.flush();lines.append(line)
-                print(line,end='',flush=True)
+                if 'counterfactual' not in args:print(line,end='',flush=True)
             code=process.wait()
         if code:
             detail=''.join(lines)[-4000:]
@@ -48,7 +49,8 @@ def portfolio_tools(context:PortfolioContext):
     def prepare_environment() -> dict:
         """Build Go backend and validate fixed data, downloading only when absent. Required before research."""
         context.command(['make','build'])
-        context.command(['make','data-validate'] if (context.root/'data/normalized/daily_ohlcv.csv').exists() else ['make','data'])
+        raw_complete=len(list((context.root/'data/raw').rglob('*.csv'))) == 180
+        context.command(['make','data-validate'] if raw_complete else ['make','data'])
         return context.result({'ready':True,'development_interval':['2021-01-01','2024-12-31']},ready=True)
 
     @tool
@@ -60,7 +62,10 @@ def portfolio_tools(context:PortfolioContext):
         if checked['status']!='passed':raise ValueError('market/config quality blocked: '+json.dumps(checked))
         compared=cross_reference(context.root/'data/normalized/daily_ohlcv.csv',output)
         if compared['status']!='corroborated':raise ValueError('cross-source validation blocked: '+json.dumps(compared))
-        return context.result({'quality':checked,'cross_source_status':compared['status'],'compared_rows':compared['compared_rows'],'coverage':compared['comparison_interval'],'truth_boundary':compared['truth_claim']},data_audited=True)
+        inventory_path=context.root/'data/reference/coverage.json'
+        inventory=json.loads(inventory_path.read_text()) if inventory_path.exists() else None
+        if inventory is not None:verify_inventory(context.root/'data/reference')
+        return context.result({'quality':checked,'cross_source_status':compared['status'],'compared_rows':compared['compared_rows'],'coverage':compared['comparison_interval'],'truth_boundary':compared['truth_claim'],'full_history_inventory':{'primary_rows':inventory['primary_rows'],'reference_rows':inventory['reference_rows'],'asset_coverage':inventory['coverage']} if inventory else 'Full reference inventory has not been built.'},data_audited=True)
 
     @tool
     def run_research(budget:Annotated[int,Field(ge=2,le=20)]) -> dict:
@@ -77,7 +82,7 @@ def portfolio_tools(context:PortfolioContext):
         summary=json.loads((destination/'summary.json').read_text())
         folds=json.loads((destination/'fold_metrics.json').read_text())['candidates']
         observations=[{'candidate_id':c['candidate_id'],'parameters':c['parameters'],**c['validation']['aggregate']} for c in folds]
-        return context.result({'summary':summary,'candidate_comparison':observations},research=relative,remaining_budget=facts['remaining_budget']-budget,replayed=False,report=False,inspected=[])
+        return context.result({'summary':summary,'candidate_comparison':observations},research=relative,remaining_budget=facts['remaining_budget']-budget,replayed=False,report=False,hypothesis=False,stress_tested=False,inspected=[])
 
     @tool
     def inspect_candidate(candidate_id:str) -> dict:
@@ -96,12 +101,38 @@ def portfolio_tools(context:PortfolioContext):
         return context.result({'replay':output.strip(),'model_calls':0},replayed=True)
 
     @tool
+    def propose_hypothesis(concern:Literal['cost_fragility','parameter_instability','drawdown'],statement:str) -> dict:
+        """Register a falsifiable risk hypothesis BEFORE running counterfactual tests. Use observed fold evidence. The fixed rejection rule is a Sharpe drop >0.3 or negative Sharpe under an intervention; the agent cannot move the threshold."""
+        path=context.research()
+        if not statement.strip() or len(statement)>2000:raise ValueError('provide a concise testable hypothesis')
+        claim={'concern':concern,'statement':statement,'rejection_threshold':0.05 if concern=='drawdown' else 0.3,'rule':'worst-fold drawdown increase >0.05' if concern=='drawdown' else 'median Sharpe drop >0.3 or becomes negative','registered_before_test':True}
+        write_json(path/'hypothesis.json',claim)
+        return context.result(claim,hypothesis=True,stress_tested=False,report=False)
+
+    @tool
+    def stress_test_strategy() -> dict:
+        """Challenge the registered hypothesis using the Go engine: commission x2, slippage x2, zero-cost diagnostic, and adjacent trend parameter. Measures four development folds and returns evidence, not model predictions."""
+        path=context.research()
+        if not context.state['facts'].get('hypothesis'):raise ValueError('propose_hypothesis must precede testing')
+        report=json.loads(context.command([str(context.root/'bin/project'),'experiment','counterfactual','--root',str(context.root),'--bundle',str(path)]))
+        write_json(path/'counterfactual.json',report)
+        claim=json.loads((path/'hypothesis.json').read_text())
+        targets={'cost_fragility':['double_commission','double_slippage'],'parameter_instability':['adjacent_trend_parameter'],'drawdown':['double_commission','double_slippage','adjacent_trend_parameter']}[claim['concern']]
+        relevant=[r for r in report['scenarios'] if r['scenario'] in targets]
+        baseline=next(r for r in report['scenarios'] if r['scenario']=='baseline')
+        supported=any(r['worst_drawdown']-baseline['worst_drawdown']>0.05 for r in relevant) if claim['concern']=='drawdown' else any(r['sharpe_drop_from_baseline']>0.3 or r['median_validation_sharpe']<0 for r in relevant)
+        decision={'hypothesis':claim,'result':'risk_supported' if supported else 'risk_not_supported_by_these_tests','evidence_scenarios':targets,'max_sharpe_drop':max(r['sharpe_drop_from_baseline'] for r in relevant),'scope':'development-only robustness evidence; not a claim of future performance'}
+        write_json(path/'hypothesis_verdict.json',decision)
+        return context.result({'measured':report,'hypothesis_verdict':decision},stress_tested=True,report=False,replayed=False)
+
+    @tool
     def write_report(analysis:str,risks:str,next_actions:str) -> dict:
         """Write the agent's evidence-based interpretation and generate an equity/candidate report. Requires successful replay and inspection of selected candidate. Describe development selection bias; do not claim holdout or future profit."""
         path=context.research()
         facts=context.state['facts']
         selected=json.loads((path/'summary.json').read_text())['selected_candidate_id']
         if not facts.get('replayed'):raise ValueError('replay_research must succeed before report')
+        if not facts.get('stress_tested'):raise ValueError('register a hypothesis and run stress_test_strategy before report')
         if selected not in facts.get('inspected',[]):raise ValueError('inspect selected candidate before report')
         if not all(v.strip() for v in (analysis,risks,next_actions)):raise ValueError('report fields must be nonempty')
         output=context.directory/'outputs'
@@ -110,9 +141,11 @@ def portfolio_tools(context:PortfolioContext):
             if source.is_file():shutil.copy2(source,output/source.name)
         shutil.copytree(context.directory/'market_data',output/'market_data',dirs_exist_ok=True)
         shutil.copy2(context.root/'configs/v2_policy.json',output/'market_data/policy.json')
+        if (context.root/'data/reference/coverage.json').exists():
+            shutil.copytree(context.root/'data/reference',output/'market_data/full_reference',dirs_exist_ok=True)
         review={'analysis':analysis,'risks':risks,'next_actions':next_actions}
         write_json(output/'agent_review.json',review)
         dashboard(output,review)
         return context.result({'report':'outputs/index.html','candidate':selected},report=True)
 
-    return {registered.name:registered for registered in (prepare_environment,audit_market_data,run_research,inspect_candidate,replay_research,write_report)}
+    return {registered.name:registered for registered in (prepare_environment,audit_market_data,run_research,inspect_candidate,replay_research,propose_hypothesis,stress_test_strategy,write_report)}

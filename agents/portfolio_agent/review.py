@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 from .market_data import verify_market_evidence
+from .dataset import verify_inventory
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,Ed25519PublicKey
 
@@ -72,6 +73,7 @@ def main():
         subprocess.run([args.project,'evidence','verify-v2','--bundle',str(args.bundle)],check=True)
         if args.role=='reviewer' and args.decision=='approve':
             verify_market_evidence(args.bundle,args.root)
+            if (args.bundle/'market_data/full_reference').exists():verify_inventory(args.bundle/'market_data/full_reference')
             subprocess.run([args.project,'experiment','agent-replay','--root',str(args.root),'--bundle',str(args.bundle)],check=True)
             for name in ('quality','cross_reference'):
                 status=json.loads((args.bundle/'market_data'/(name+'.json')).read_text())['status']

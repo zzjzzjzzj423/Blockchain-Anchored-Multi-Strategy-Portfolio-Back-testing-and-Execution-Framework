@@ -1,7 +1,9 @@
 package experiment
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -45,6 +47,39 @@ func TestAgentWorkflowReplayDetectsLedgerMutation(t *testing.T) {
 		t.Fatal("unexpected model call")
 	}
 	if err := ReplayAgentSearch(context.Background(), root, report.OutputDirectory); err != nil {
+		t.Fatal(err)
+	}
+	stress, err := Counterfactual(context.Background(), root, report.OutputDirectory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := Counterfactual(context.Background(), root, report.OutputDirectory)
+	if err != nil || !bytes.Equal(stress, again) {
+		t.Fatalf("counterfactual not reproducible: %v", err)
+	}
+	stressPath := filepath.Join(report.OutputDirectory, "counterfactual.json")
+	if err := os.WriteFile(stressPath, stress, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplayAgentSearch(context.Background(), root, report.OutputDirectory); err != nil {
+		t.Fatal(err)
+	}
+	var document map[string]any
+	if err := json.Unmarshal(stress, &document); err != nil {
+		t.Fatal(err)
+	}
+	document["holdout_opened"] = true
+	bad, err := json.Marshal(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(stressPath, bad, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplayAgentSearch(context.Background(), root, report.OutputDirectory); err == nil || !strings.Contains(err.Error(), "counterfactual") {
+		t.Fatalf("wanted counterfactual mutation rejection: %v", err)
+	}
+	if err := os.WriteFile(stressPath, stress, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(report.OutputDirectory, "ensemble_ledger.csv")

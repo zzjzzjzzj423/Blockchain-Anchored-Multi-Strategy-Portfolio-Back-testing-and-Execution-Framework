@@ -42,7 +42,7 @@ def main():
         directory=Path(tempfile.mkdtemp(prefix='langgraph_',dir=ROOT/'artifacts'))
         write_json(directory/'session.json',{'model':args.model,'budget':args.budget,'goal':args.goal,'framework':'LangGraph'})
     context=PortfolioContext(ROOT,directory,args.codex_bin,args.model,args.timeout)
-    runtime=AgentRuntime(CodexProvider(args.codex_bin,args.model,args.timeout),portfolio_tools(context),context,directory,args.max_steps,can_finish=lambda state: bool(state["facts"].get("replayed") and state["facts"].get("report") and state["facts"].get("data_audited") and state["facts"].get("remaining_budget")==0))
+    runtime=AgentRuntime(CodexProvider(args.codex_bin,args.model,args.timeout),portfolio_tools(context),context,directory,args.max_steps,can_finish=lambda state: bool(state["facts"].get("replayed") and state["facts"].get("report") and state["facts"].get("data_audited") and state["facts"].get("stress_tested") and state["facts"].get("remaining_budget")==0))
     run_config={'configurable':{'thread_id':'portfolio'},'recursion_limit':args.max_steps*3+5}
     with SqliteSaver.from_conn_string(str(directory/'checkpoints.sqlite')) as saver:
         graph=runtime.compile(saver)
@@ -65,7 +65,7 @@ def main():
             identity={}
             for source in sorted((ROOT/'agents/portfolio_agent').glob('*.py')):
                 identity[str(source.relative_to(ROOT))]=hashlib.sha256(source.read_bytes()).hexdigest()
-            for name in ('internal/evidence/v2.go','internal/experiment/agent_search.go','internal/experiment/agent_replay.go','scripts/codex_propose.py','configs/v2_policy.json','requirements-agent.lock'):
+            for name in ('internal/evidence/v2.go','internal/experiment/counterfactual.go','internal/experiment/agent_search.go','internal/experiment/agent_replay.go','scripts/codex_propose.py','configs/v2_policy.json','requirements-agent.lock','web/index.html','web/app.js','web/style.css'):
                 identity[name]=hashlib.sha256((ROOT/name).read_bytes()).hexdigest()
             write_json(output/'source_identity.json',{'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'source_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),'sha256':identity})
             faults=fault_campaign(ROOT,output/'fault_campaign.json')
