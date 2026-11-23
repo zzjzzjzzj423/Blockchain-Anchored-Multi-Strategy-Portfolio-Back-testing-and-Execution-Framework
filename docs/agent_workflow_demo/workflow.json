@@ -1,0 +1,44 @@
+{
+  "budget": 20,
+  "development_only": true,
+  "model": "gpt-6.1-sol",
+  "model_calls_in_replay": 0,
+  "stages": [
+    {
+      "elapsed_seconds": 0.145,
+      "stage": "build",
+      "status": "completed"
+    },
+    {
+      "elapsed_seconds": 1.239,
+      "stage": "data_validation",
+      "status": "completed"
+    },
+    {
+      "elapsed_seconds": 17.375,
+      "stage": "agent_plan",
+      "status": "completed"
+    },
+    {
+      "elapsed_seconds": 183.08,
+      "stage": "agent_search_and_execution",
+      "status": "completed"
+    },
+    {
+      "elapsed_seconds": 0.927,
+      "stage": "deterministic_replay",
+      "status": "completed"
+    },
+    {
+      "elapsed_seconds": 18.169,
+      "stage": "agent_review",
+      "status": "completed"
+    },
+    {
+      "elapsed_seconds": 0.005,
+      "stage": "visual_report",
+      "status": "completed"
+    }
+  ],
+  "status": "completed"
+}

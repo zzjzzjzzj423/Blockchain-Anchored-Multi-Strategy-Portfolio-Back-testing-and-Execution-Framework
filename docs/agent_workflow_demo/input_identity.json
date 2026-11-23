@@ -1,0 +1,16 @@
+{
+  "development_interval": [
+    "2021-01-01",
+    "2024-12-31"
+  ],
+  "sha256": {
+    "configs/costs.json": "35f66b728f6b8c84914b1cddcde5d3287a82856b07fac604030a81b024d29364",
+    "configs/strategies.json": "363df6404e83506f26a719454ad1725a4d3450779b37d045cbe786910cdd29b7",
+    "data/normalized/daily_ohlcv.csv": "f6d2e60b8a397e9870412e229e0b0de0391f8970c5a963fc90119367eaced714",
+    "internal/experiment/agent_replay.go": "8ef8c269b6d8dd2e2dc69076a5a339319d7ad7c9782107a34da1f3fc7c1b63c5",
+    "internal/experiment/agent_search.go": "ae039d72808198b965cc26ae5967761cf37dc9a3e2638bfbb3e8472e106cd6b9",
+    "scripts/agent_workflow.py": "2edd876693e4046412c79c13e27376c78508be197a2857df02ab76916cd67bbd",
+    "scripts/codex_propose.py": "b6e8ae87c23482ba727c414a51f3971e3c38f0f3f0167db407584a43259df506"
+  },
+  "source_commit": "2524c0b641ce6b54e7f89cbf4feb1251a34dcb55"
+}

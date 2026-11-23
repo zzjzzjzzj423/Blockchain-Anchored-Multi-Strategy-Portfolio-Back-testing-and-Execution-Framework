@@ -1,0 +1,29 @@
+["make", "build"]
+["make", "data-validate"]
+data validation passed: files=180 rows=5478 sha256=f6d2e60b8a397e9870412e229e0b0de0391f8970c5a963fc90119367eaced714
+["git", "rev-parse", "HEAD"]
+2524c0b641ce6b54e7f89cbf4feb1251a34dcb55
+["/Users/maocheng/Documents/ChatGPT/bc/portfolio-framework/bin/project", "experiment", "agent-search", "--budget", "20", "--codex-bin", "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex", "--timeout", "120", "--model", "gpt-6.1-sol"]
+agent proposal 1 accepted after 1 attempt(s)
+agent proposal 2 accepted after 1 attempt(s)
+agent proposal 3 accepted after 1 attempt(s)
+agent proposal 4 accepted after 1 attempt(s)
+agent proposal 5 accepted after 1 attempt(s)
+agent proposal 6 accepted after 1 attempt(s)
+agent proposal 7 accepted after 1 attempt(s)
+agent proposal 8 accepted after 1 attempt(s)
+agent proposal 9 accepted after 1 attempt(s)
+agent proposal 10 accepted after 1 attempt(s)
+agent proposal 11 accepted after 1 attempt(s)
+agent proposal 12 accepted after 1 attempt(s)
+agent proposal 13 accepted after 1 attempt(s)
+agent proposal 14 accepted after 1 attempt(s)
+agent proposal 15 accepted after 1 attempt(s)
+agent proposal 16 accepted after 1 attempt(s)
+agent proposal 17 accepted after 1 attempt(s)
+agent proposal 18 accepted after 1 attempt(s)
+agent proposal 19 accepted after 1 attempt(s)
+agent proposal 20 accepted after 1 attempt(s)
+agent search completed: candidates=20 codex_calls=19 fallbacks=0 selected=cf0185d35dde31cd019bc745d2e4935307fb7371d402c36089dded955e5ebfd3 output=artifacts/development/agent_search_v2_785319857
+["/Users/maocheng/Documents/ChatGPT/bc/portfolio-framework/bin/project", "experiment", "agent-replay", "--bundle", "/Users/maocheng/Documents/ChatGPT/bc/portfolio-framework/artifacts/workflow_6sko9emz"]
+agent replay passed: all fold metrics and execution artifacts byte-identical; model calls=0

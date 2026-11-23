@@ -4,6 +4,39 @@ MSBD5017 课程项目：构建一个确定性的多策略投资组合回测系�
 
 当前状态：**M0-M9 全部完成**。2025 final holdout、canonical evidence、Merkle proofs、本地 EVM 锚定和 deterministic replay 均已通过冻结门禁；10/10 clean replay 字节一致，seed 5017 的 100/100 单字节 mutation 均被检测并定位。技术报告、五张可追溯图、D1-D3 清单和隔离 checkout rehearsal 已完成。
 
+## 完整 Agent 研究流程
+
+```bash
+make agent-workflow
+```
+
+一条命令依次完成：构建 Go 工具 → 检查固定数据（缺少时下载）→ Agent 研究计划 → 20 候选反馈搜索 → 执行选中策略并导出完整交易/账本 → 无模型确定性重放 → Agent 结果复盘 → 本次运行的网页可视化 → SHA-256 证据封装和验证。
+
+输出目录为 `artifacts/workflow_*`，终端成功后打印 `WORKFLOW_COMPLETED` 和路径。打开其中的 `index.html` 可查看本次开发集净值曲线、候选对比和 Agent 复盘；`workflow.json` 记录各阶段状态，失败时保留诊断文件并以非零状态退出。`agent_plan.json`、`search_trace.jsonl`、`agent_review.json` 记录模型参与；`ensemble_trades.csv`、`ensemble_ledger.csv` 等是 Go 引擎执行的结果。Agent 负责研究决策，Go 工具负责受约束的计算和会计，不把模型的自然语言当作收益数据。
+
+可以调整预算及模型，每次生成独立目录：
+
+```bash
+python3 scripts/agent_workflow.py --budget 6 --codex-bin /path/to/codex
+python3 scripts/agent_workflow.py --verify artifacts/workflow_RUN_ID
+./bin/project experiment agent-replay --bundle artifacts/workflow_RUN_ID
+```
+
+完整工作流默认使用已实测的 `gpt-6.1-sol`，可用 `--model` 或 `AGENT_MODEL` 覆盖，参数提议仍支持使用账号默认模型。预算限制为 2–20；baseline 固定，其余候选由模型根据已有开发集评价选择：每轮从 1,458 个有限空间候选中排除已评估项，再按固定顺序均匀抽取最多 32 个合法选项，模型返回选项索引与理由。选项在下一轮按新历史重新生成，避免重复提议消耗预算。模型失败默认终止，不静默变为手工搜索。重放从记录中的参数重新运行全部候选，逐字节核对四折结果、选中参数、信号、订单、成交、权重、收益与账本，模型调用为零。证据 manifest 检查所有文件及文件集合，检测改写、缺失和新增文件。
+
+本扩展研究区间固定为 2021–2024，使用现有三类策略与动态组合的有限参数空间；它不生成任意策略源码。该区间已用于历史研究，因此新结果属于开发集实验，不能声称是新的盲测表现。新证据采用独立 `agent-workflow-1` SHA-256 文件 manifest，尚未上链；原 v1 的 2025 holdout 和链上 Merkle 证据仍属于原实验。
+
+### 已完成的 20 候选运行
+
+[`docs/agent_workflow_demo/index.html`](docs/agent_workflow_demo/index.html) 是一次完整成功运行的网页报告，目录同时发布所有 27 个证据文件及 manifest。模型为 `gpt-6.1-sol`，19 次参数选择调用，0 回退、0 拒绝，另外包含研究计划和复盘两次模型调用。全部四折指标与最终执行产物重放字节一致，重放没有模型调用。可直接验证公开副本：
+
+```bash
+python3 scripts/agent_workflow.py --verify docs/agent_workflow_demo
+./bin/project experiment agent-replay --bundle docs/agent_workflow_demo
+```
+
+本次固定 baseline 的四折中位 Sharpe 为 0.667185、最差折最大回撤为 36.23%；选中候选为 1.637911、31.24%。选中参数为 trend 30/60，mean reversion 30/-1.5/-0.25，allocator 30/60。这是开发集搜索结果，存在选参偏差；报告保留全部候选和 Agent 对弱势折、成本与风险的分析。
+
 ## 可选扩展：AI 参数提议与交互式证据看板
 
 `make dashboard` 会校验五张已提交 SVG 的 SHA-256，并生成可直接在浏览器打开的 [`docs/dashboard/index.html`](docs/dashboard/index.html)。页面可切换收益、回撤、权重、成本和市场状态图，同时展示冻结的 holdout 指标、Merkle root、重放及单字节变异验证记录。它是从报告生成的只读前端，不接交易所、不提交链上交易，也不重新计算或修改正式结果；因此无需常驻后端。

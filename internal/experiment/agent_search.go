@@ -27,6 +27,7 @@ type CodexProposer struct {
 	AllowManualFallback bool
 	Calls               int
 	Fallbacks           int
+	Rejections          []string
 }
 
 type codexProposal struct {
@@ -43,6 +44,23 @@ type codexProposal struct {
 }
 
 func (p *CodexProposer) Propose(history []CandidateAssessment) (Proposal, error) {
+	var last error
+	for attempt := 0; attempt < 5; attempt++ {
+		proposal, err := p.proposeOnce(history)
+		if err == nil {
+			fmt.Fprintf(os.Stderr, "agent proposal %d accepted after %d attempt(s)\n", len(history)+1, attempt+1)
+			return proposal, nil
+		}
+		last = err
+		p.Rejections = append(p.Rejections, err.Error())
+		if p.Context != nil && p.Context.Err() != nil {
+			return Proposal{}, p.Context.Err()
+		}
+	}
+	return Proposal{}, fmt.Errorf("agent proposal rejected after 5 attempts: %w", last)
+}
+
+func (p *CodexProposer) proposeOnce(history []CandidateAssessment) (Proposal, error) {
 	if len(history) == 0 {
 		return ManualProposer{}.Propose(history)
 	}
@@ -71,7 +89,33 @@ func (p *CodexProposer) Propose(history []CandidateAssessment) (Proposal, error)
 			"median_annualized_turnover":        turnover,
 		})
 	}
-	input, err := canonical.JSON(map[string]any{"schema_version": "1.0.0", "history": feedback})
+	seen := map[string]bool{}
+	for _, assessment := range history {
+		seen[assessment.CandidateID] = true
+	}
+	available := []Candidate{}
+	for _, candidate := range CandidateSpace() {
+		id, _ := candidate.ID()
+		if !seen[id] {
+			available = append(available, candidate)
+		}
+	}
+	if len(available) == 0 {
+		return Proposal{}, fmt.Errorf("candidate space exhausted")
+	}
+	count := 32
+	if len(available) < count {
+		count = len(available)
+	}
+	options := []any{}
+	for index := 0; index < count; index++ {
+		document, err := candidateDocument(available[index*len(available)/count])
+		if err != nil {
+			return Proposal{}, err
+		}
+		options = append(options, document)
+	}
+	input, err := canonical.JSON(map[string]any{"schema_version": "1.0.0", "history": feedback, "rejections": p.Rejections, "options": options})
 	if err != nil {
 		return Proposal{}, err
 	}
@@ -175,7 +219,8 @@ func RunAgentSearch(ctx context.Context, root string, budget int, proposer *Code
 		return AgentSearchReport{}, err
 	}
 	proposer.Context = ctx
-	search, err := RunSearch(ctx, NewCandidateEvaluator(bars), proposer, budget)
+	evaluator := NewCandidateEvaluator(bars)
+	search, err := RunSearch(ctx, evaluator, proposer, budget)
 	if err != nil {
 		return AgentSearchReport{}, err
 	}
@@ -195,7 +240,18 @@ func RunAgentSearch(ctx context.Context, root string, budget int, proposer *Code
 	if err != nil {
 		return AgentSearchReport{}, err
 	}
-	for name, content := range map[string][]byte{"search_trace.jsonl": trace, "fold_metrics.json": folds} {
+	artifacts, err := agentArtifacts(ctx, evaluator, search, config)
+	if err != nil {
+		return AgentSearchReport{}, err
+	}
+	rejections, err := canonical.JSON(proposer.Rejections)
+	if err != nil {
+		return AgentSearchReport{}, err
+	}
+	artifacts["proposal_rejections.json"] = rejections
+	artifacts["search_trace.jsonl"] = trace
+	artifacts["fold_metrics.json"] = folds
+	for name, content := range artifacts {
 		if err := os.WriteFile(filepath.Join(directory, name), content, 0o644); err != nil {
 			return AgentSearchReport{}, err
 		}

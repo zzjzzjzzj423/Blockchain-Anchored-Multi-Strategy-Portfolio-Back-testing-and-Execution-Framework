@@ -11,7 +11,7 @@ CODEX_BIN ?= $(if $(wildcard $(CODEX_APP_BIN)),$(CODEX_APP_BIN),codex)
 FOUNDRY_BIN := $(CURDIR)/.tools/foundry-v1.9.0/bin
 FOUNDRY_ENV := FOUNDRY_DIR=$(CURDIR)/.cache/foundry SVM_HOME=$(CURDIR)/.cache/svm PATH=$(FOUNDRY_BIN):$$PATH
 
-.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci public-evidence data data-validate execution strategies wasm m4 agent-search dashboard m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 report deliverables demo m9 clean
+.PHONY: help bootstrap foundry-bootstrap doctor build test vet fmt fmt-check ci public-evidence data data-validate execution strategies wasm m4 agent-search agent-workflow dashboard m5-freeze m5 m6 contract-test contract-coverage m7 replay mutation m8 report deliverables demo m9 clean
 
 help:
 	@echo "MSBD5017 portfolio-proof"
@@ -27,7 +27,8 @@ help:
 	@echo "  make strategies run M3 strategies, no-look-ahead, and parallel checks"
 	@echo "  make wasm       build three portable WASI strategy modules"
 	@echo "  make m4         run 20-candidate walk-forward selection and freeze parameters"
-	@echo "  make agent-search  run an optional development-only Codex search"
+	@echo "  make agent-search  run a development-only Codex search"
+	@echo "  make agent-workflow  run the full agent research, execution, replay and report pipeline"
 	@echo "  make dashboard  build a read-only interactive evidence viewer"
 	@echo "  make m5-freeze  freeze the development-only regime threshold"
 	@echo "  make m5         run the one-time formal 2025 final holdout"
@@ -101,6 +102,9 @@ m4:
 
 agent-search:
 	@PATH="$(CURDIR)/.tools/go/bin:$$PATH" $(GO_ENV) $(GO) run ./cmd/project experiment agent-search --budget 3 --codex-bin "$(CODEX_BIN)"
+
+agent-workflow:
+	@python3 scripts/agent_workflow.py --budget 20 --codex-bin "$(CODEX_BIN)"
 
 dashboard:
 	@python3 ./scripts/build-dashboard.py

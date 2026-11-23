@@ -227,6 +227,24 @@ func runEvidence(ctx context.Context, args []string) int {
 }
 
 func runExperiment(ctx context.Context, args []string) int {
+	if len(args) > 0 && args[0] == "agent-replay" {
+		flags := flag.NewFlagSet("agent-replay", flag.ContinueOnError)
+		root := flags.String("root", ".", "repository root")
+		bundle := flags.String("bundle", "", "agent run directory")
+		if err := flags.Parse(args[1:]); err != nil {
+			return 2
+		}
+		if *bundle == "" {
+			fmt.Fprintln(os.Stderr, "agent-replay requires --bundle")
+			return 2
+		}
+		if err := experiment.ReplayAgentSearch(ctx, *root, *bundle); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		fmt.Println("agent replay passed: all fold metrics and execution artifacts byte-identical; model calls=0")
+		return 0
+	}
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "experiment command requires one of: select, freeze-final, final, agent-search")
 		return 2
@@ -444,7 +462,8 @@ func printUsage() {
   project execution validate the deterministic accounting core
   project strategies validate the M3 strategies and deterministic merge
   project experiment select run M4 walk-forward selection and freeze parameters
-  project experiment agent-search run optional development-only Codex proposals
+  project experiment agent-search run development-only Codex proposals and export execution artifacts
+  project experiment agent-replay replay recorded candidates and execution artifacts without a model
   project experiment freeze-final freeze the M5 regime threshold without opening 2025
   project experiment final run the one-time formal 2025 holdout experiment
   project evidence build build the canonical bundle and ordered SHA-256 Merkle tree

@@ -56,7 +56,7 @@ SCHEMA = {
             "required": ["trend", "mean_reversion", "allocator"],
             "additionalProperties": False,
         },
-        "rationale": {"type": "string"},
+        "rationale": {"type": "string", "maxLength": 500},
     },
     "required": ["parameters", "rationale"],
     "additionalProperties": False,
@@ -77,9 +77,10 @@ def prompt_for(request):
         "read files, browse, or infer anything from the final holdout. The frozen "
         "selection order is median validation net Sharpe, then worst-fold maximum "
         "drawdown, then median annualized turnover. Favor a useful unexplored "
-        "candidate over claiming global optimality. Return the JSON object only.\n\n"
+        "candidate over claiming global optimality. Rationale must be at most 500 characters. Return the JSON object only.\n\n"
         "Development feedback (JSON):\n"
         + json.dumps(history, sort_keys=True, separators=(",", ":"))
+        + "\nPrevious rejected attempts (avoid these failures): " + json.dumps(request.get("rejections", []))
     )
 
 
@@ -151,7 +152,20 @@ class AppServer:
 
 
 def propose(request, codex_bin, model, timeout):
-    prompt = prompt_for(request)
+    prompt = "" if request.get("task") in {"plan", "review"} else prompt_for(request)
+    schema = SCHEMA
+    if request.get("task") in {"plan", "review"}:
+        prompt = ("You are the portfolio research agent. Use only supplied development evidence. "
+                  "Never claim future profit or holdout validation. Do not call tools or read files. Return concise JSON; each field at most 1000 characters. "
+                  "For plan explain research hypothesis, evaluation process and risks. "
+                  "For review explain measured tradeoffs, baseline comparison, limitations and next actions.\n"
+                  + json.dumps(request, sort_keys=True))
+        schema = {"type":"object","properties":{k:{"type":"string","maxLength":1000} for k in ("analysis","risks","next_actions")},
+                  "required":["analysis","risks","next_actions"],"additionalProperties":False}
+    options = request.get("options")
+    if options:
+        prompt += "\nChoose exactly one candidate_index from these host-validated unseen options. Do not invent parameters. Available options: " + json.dumps(options)
+        schema = {"type":"object","properties":{"candidate_index":{"type":"integer","enum":list(range(len(options)))},"rationale":{"type":"string","maxLength":500}},"required":["candidate_index","rationale"],"additionalProperties":False}
     with tempfile.TemporaryDirectory(prefix="msbd5017-codex-proposer-") as temporary:
         server = AppServer(codex_bin, temporary, timeout)
         try:
@@ -176,8 +190,9 @@ def propose(request, codex_bin, model, timeout):
                     "input": [{"type": "text", "text": prompt}],
                     "cwd": temporary,
                     "approvalPolicy": "never",
+                    "effort": "low",
                     "sandboxPolicy": {"type": "readOnly"},
-                    "outputSchema": SCHEMA,
+                    "outputSchema": schema,
                 },
                 request_id,
             )
@@ -201,7 +216,16 @@ def propose(request, codex_bin, model, timeout):
                         raise RuntimeError(f"Codex turn ended with {turn.get('status')}: {turn.get('error')}")
                     if not turn_accepted or not completed_text:
                         raise RuntimeError("Codex completed without a structured proposal")
-                    return json.loads(completed_text)
+                    answer = json.loads(completed_text)
+                    if options:
+                        index = answer.get("candidate_index")
+                        if type(index) is not int or not 0 <= index < len(options):
+                            raise ValueError("candidate_index outside available options")
+                        parameters = json.loads(json.dumps(options[index]))
+                        for field in ("entry_z", "exit_z"):
+                            parameters["mean_reversion"][field] = float(parameters["mean_reversion"][field])
+                        return {"parameters":parameters,"rationale":answer["rationale"]}
+                    return answer
         finally:
             server.close()
 
